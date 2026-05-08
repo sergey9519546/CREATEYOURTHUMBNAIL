@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw } from 'lucide-react';
+import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw, Wand2 } from 'lucide-react';
 
 interface ThumbnailConceptCardProps {
   concept: any;
@@ -181,6 +181,15 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
               CTR Explanation
             </span>
             <p className="text-sm font-body italic opacity-80 mt-3 leading-relaxed">{concept.ctr_explanation}</p>
+          </div>
+          <div className="pt-8 border-t-2 border-[var(--color-accent-pencil)]/10">
+            <span className="text-xs font-label uppercase opacity-60 flex items-center gap-2">
+              <Wand2 className="w-4 h-4" />
+              AI Prompt
+            </span>
+            <p className="text-xs font-mono opacity-80 mt-3 leading-relaxed bg-[var(--color-surface-container)] p-3 neo-border break-words">
+              {concept.image_generation_prompt}
+            </p>
           </div>
         </div>
 
