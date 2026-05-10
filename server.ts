@@ -17,8 +17,6 @@ const getAI = () => {
     }
 
     if (apiKey) {
-      console.log(`API Key length: ${apiKey.length}`);
-      console.log(`API Key starts with: ${apiKey.substring(0, 4)}... ends with: ...${apiKey.substring(apiKey.length - 4)}`);
     } else {
       console.log("API Key is MISSING");
     }
@@ -30,13 +28,19 @@ const getAI = () => {
   return aiClient;
 };
 
+// Cache instructions to avoid reading files on every request
+let cachedInstruction: string | null = null;
+
 // Load instructions from markdown files for dynamic integration
 const getSystemInstruction = () => {
+  if (cachedInstruction) {
+    return cachedInstruction;
+  }
   try {
     const skillContent = fs.readFileSync(path.join(process.cwd(), "SKILL.md"), "utf-8");
     const rulesContent = fs.readFileSync(path.join(process.cwd(), "thumbnail-rules.md"), "utf-8");
     
-    return `You are the YouTube Thumbnail Strategist, a World-Class Click Engineer.
+    cachedInstruction = `You are the YouTube Thumbnail Strategist, a World-Class Click Engineer.
 Your identity, mission, and workflow are defined in the SKILL DEFINITION below.
 Your core strategies are derived from the MASTER LOGIC BLUEPRINT (thumbnail-rules.md).
 
@@ -54,6 +58,7 @@ ${skillContent}
 
 When generating concepts, you MUST strictly follow the Response Template defined in the SKILL DEFINITION.
 Ensure your image_generation_prompt is detailed and follows the Image Generation Guidelines in the SKILL DEFINITION.`;
+    return cachedInstruction;
   } catch (error) {
     console.error("Error loading instruction files:", error);
     // Fallback to a basic instruction if files are missing
@@ -95,7 +100,7 @@ async function startServer() {
         contents.push({
           inlineData: {
             mimeType: "image/png",
-            data: imageBase64.split(',')[1]
+            data: imageBase64.substring(imageBase64.indexOf(',') + 1)
           }
         });
       }
@@ -166,7 +171,7 @@ async function startServer() {
         contents.push({
           inlineData: {
             mimeType: "image/png",
-            data: imageBase64.split(',')[1]
+            data: imageBase64.substring(imageBase64.indexOf(',') + 1)
           }
         });
       }
@@ -238,7 +243,10 @@ async function startServer() {
 
       const enhancedPrompt = `[BASE PROMPT: ${prompt}, Layout: ${layout || 'Default'}, Cinematic Lighting, Professional Photography, Saturation: ${saturation || 100}%] + [NICHE MODIFIER: ${nicheModifiers[niche] || ''}] + [STYLE PRESET: ${stylePresets[stylePreset] || ''}] + [HOOK & COLOR: Curiosity Gap, ${colorPairings[palette] || 'Red+Green (Comparison)'}] + [TYPOGRAPHY: Bold, readable text, 3D effect] + [CTR PRINCIPLES: Clear emotion, High Contrast]`;
 
-      const minimaxApiKey = process.env.MINIMAX_API_KEY || 'sk-api-D85kzlWzfVKrEoZNEHG7-QT1M5ClO2H0RDAqlsDkUKdK38AIPPdQ-eZ1UBDWsw-EV4SICqhwE4Y1bx0jRhiaiVuS_bk37bADSx9e2Lk4BqT6i2PaDBn6Bu8';
+      const minimaxApiKey = process.env.MINIMAX_API_KEY;
+      if (!minimaxApiKey) {
+        throw new Error('MINIMAX_API_KEY environment variable is required');
+      }
 
       const response = await fetch("https://api.minimax.io/v1/image_generation", {
         method: "POST",
