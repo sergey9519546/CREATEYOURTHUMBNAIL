@@ -31,12 +31,16 @@ const getAI = () => {
 };
 
 // Load instructions from markdown files for dynamic integration
+let cachedSystemInstruction: string | null = null;
 const getSystemInstruction = () => {
+  if (cachedSystemInstruction) {
+    return cachedSystemInstruction;
+  }
   try {
     const skillContent = fs.readFileSync(path.join(process.cwd(), "SKILL.md"), "utf-8");
     const rulesContent = fs.readFileSync(path.join(process.cwd(), "thumbnail-rules.md"), "utf-8");
     
-    return `You are the YouTube Thumbnail Strategist, a World-Class Click Engineer.
+    cachedSystemInstruction = `You are the YouTube Thumbnail Strategist, a World-Class Click Engineer.
 Your identity, mission, and workflow are defined in the SKILL DEFINITION below.
 Your core strategies are derived from the MASTER LOGIC BLUEPRINT (thumbnail-rules.md).
 
@@ -54,6 +58,7 @@ ${skillContent}
 
 When generating concepts, you MUST strictly follow the Response Template defined in the SKILL DEFINITION.
 Ensure your image_generation_prompt is detailed and follows the Image Generation Guidelines in the SKILL DEFINITION.`;
+    return cachedSystemInstruction;
   } catch (error) {
     console.error("Error loading instruction files:", error);
     // Fallback to a basic instruction if files are missing
@@ -95,7 +100,7 @@ async function startServer() {
         contents.push({
           inlineData: {
             mimeType: "image/png",
-            data: imageBase64.split(',')[1]
+            data: imageBase64.substring(imageBase64.indexOf(',') + 1)
           }
         });
       }
@@ -166,7 +171,7 @@ async function startServer() {
         contents.push({
           inlineData: {
             mimeType: "image/png",
-            data: imageBase64.split(',')[1]
+            data: imageBase64.substring(imageBase64.indexOf(',') + 1)
           }
         });
       }
