@@ -1040,6 +1040,8 @@ export default function App() {
                     getCTRScore={getCTRScore}
                     handleRefine={handleRefine}
                     setResults={setResults}
+                    chatInputs={chatInputs}
+                    setChatInputs={setChatInputs}
                   />
                 ))}
               </div>

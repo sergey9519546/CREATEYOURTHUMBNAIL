@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw } from 'lucide-react';
+import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw, Send } from 'lucide-react';
 
 interface ThumbnailConceptCardProps {
   concept: any;
@@ -13,10 +13,12 @@ interface ThumbnailConceptCardProps {
   getCTRScore: (concept: any) => number;
   handleRefine: (concept: any, feedback?: string) => void;
   setResults: React.Dispatch<React.SetStateAction<any>>;
+  chatInputs: Record<number, string>;
+  setChatInputs: React.Dispatch<React.SetStateAction<Record<number, string>>>;
 }
 
 export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
-  concept, idx, mobilePreviewFor, setMobilePreviewFor, imageEdits, setImageEdits, refiningConcepts, getCTRScore, handleRefine, setResults
+  concept, idx, mobilePreviewFor, setMobilePreviewFor, imageEdits, setImageEdits, refiningConcepts, getCTRScore, handleRefine, setResults, chatInputs, setChatInputs
 }) => {
   const updateImageEdit = (conceptNumber: number, updates: Partial<any>) => {
     setImageEdits(prev => ({
@@ -261,6 +263,39 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
               <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
               Apply Hierarchy Refinement
             </button>
+          </div>
+
+          {/* Custom Refinement Chat */}
+          <div className="pt-8 border-t-2 border-[var(--color-accent-pencil)]/10 mt-8 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-[var(--color-primary)] neo-border text-white">
+                <MessageSquare className="w-4 h-4" />
+              </div>
+              <h5 className="font-headline text-lg font-bold uppercase tracking-tight">Custom Refinement</h5>
+            </div>
+
+            <div className="flex items-stretch gap-2">
+              <textarea
+                value={chatInputs[concept.concept_number] || ''}
+                onChange={(e) => setChatInputs(prev => ({ ...prev, [concept.concept_number]: e.target.value }))}
+                placeholder="e.g. 'Make the background more fiery' or 'Change the text to something scarier'"
+                className="w-full p-3 font-body text-sm resize-none bg-[var(--color-surface-container)] neo-border focus:outline-none focus:bg-white transition-colors"
+                rows={2}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleRefine(concept, chatInputs[concept.concept_number]);
+                  }
+                }}
+              />
+              <button
+                onClick={() => handleRefine(concept, chatInputs[concept.concept_number])}
+                disabled={!chatInputs[concept.concept_number]?.trim() || refiningConcepts[concept.concept_number]}
+                className="bg-black text-white px-4 flex items-center justify-center neo-border hover:bg-[var(--color-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed group"
+              >
+                <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
