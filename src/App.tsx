@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Terminal, Image as ImageIcon, Zap, Loader2, CheckSquare, Square, AlertCircle, ChevronRight, Activity, RefreshCw,
-  Gamepad2, TrendingUp, BookOpen, Film, Laptop, Mountain, Video, Box, Send, Sparkles, Globe, Coffee, Palette, X, Lightbulb, Heart, Plus, LayoutTemplate, Trash2,
-  Ghost, Eye, MousePointerClick, Wand2, Scissors, Paintbrush, Target, Settings, MessageSquare, Smartphone, Download
+import {
+  Terminal, Image as ImageIcon, Zap, Loader2, CheckSquare, AlertCircle, ChevronRight, Activity, RefreshCw,
+  Gamepad2, TrendingUp, BookOpen, Film, Laptop, Mountain, Video, Box, Sparkles, Globe, Coffee, Palette, X, Heart, LayoutTemplate, Trash2,
+  Ghost, Eye, MousePointerClick, Wand2, Target, Settings, MessageSquare, Smartphone, Download
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
@@ -206,31 +206,34 @@ export default function App() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Revoke previous blob URL to prevent memory leak
       if (selectedImage) URL.revokeObjectURL(selectedImage);
       const previewUrl = URL.createObjectURL(file);
       setSelectedImage(previewUrl);
-
-      // For backend
       const reader = new FileReader();
       reader.onloadend = () => {
         setBase64Image(reader.result as string);
+        // Reset so the same file can be re-selected after clearing
+        if (fileInputRef.current) fileInputRef.current.value = '';
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleGenerate = async (e?: React.FormEvent) => {
+  const handleGenerate = async (e?: React.FormEvent, overrideInput?: string) => {
     if (e) e.preventDefault();
-    if (!input.trim()) return;
+    const effectiveInput = overrideInput || input;
+    if (!effectiveInput.trim()) return;
 
     setState('generating');
     setError(null);
     setChatInputs({});
     setShowRefinementFor({});
+    setImageEdits({});
+    setMobilePreviewFor({});
+    setRefiningConcepts({});
 
     try {
-      const concepts = await getThumbnailConcepts(input, niche, stylePreset, layout, palette, base64Image || undefined, likedConcepts);
+      const concepts = await getThumbnailConcepts(effectiveInput, niche, stylePreset, layout, palette, base64Image || undefined, likedConcepts);
       setResults(concepts);
       
       let imageErrors: string[] = [];
@@ -322,6 +325,14 @@ export default function App() {
     }
   };
 
+  if (hasKey === null) {
+    return (
+      <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-[var(--color-primary)]" />
+      </div>
+    );
+  }
+
   if (hasKey === false) {
     return (
       <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-on-surface)] flex flex-col items-center justify-center p-6">
@@ -331,7 +342,7 @@ export default function App() {
           </div>
           <h2 className="text-4xl font-headline tracking-tight">API Key Required</h2>
           <p className="text-[var(--color-on-surface)] text-2xl leading-relaxed font-body">
-            To generate high-quality 2K thumbnails with the advanced Gemini 3.1 Flash Image model, you need to provide your own Google Cloud API key.
+            To generate thumbnail concepts with Gemini and images with Minimax, you need to provide your own Google Cloud API key.
           </p>
           <div className="text-xl text-[var(--color-on-surface)] bg-[var(--color-surface-container)] p-4 neo-card text-left font-body">
             <p className="mb-2">&gt; Note: You must select an API key from a paid Google Cloud project.</p>
@@ -356,6 +367,14 @@ export default function App() {
       <main className="flex-1 flex flex-col relative overflow-y-auto bg-[var(--color-bg)]">
         
         
+        {/* Backdrop — click outside drawer to close */}
+        {isSettingsOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+            onClick={() => setIsSettingsOpen(false)}
+          />
+        )}
+
         <SettingsDrawer
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
@@ -601,7 +620,7 @@ export default function App() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Describe your video concept..."
                   className="w-full bg-transparent text-[#1F1F1F] p-2 font-body text-lg focus:outline-none min-h-[48px] resize-none placeholder:text-gray-400 leading-relaxed transition-all duration-200 ease-in-out overflow-hidden"
-                  disabled={state === 'generating'}
+                  disabled={false}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -630,12 +649,14 @@ export default function App() {
                       />
                     </button>
                     {/* Clear Button */}
-                    <button 
+                    <button
                       type="button"
                       onClick={() => {
                         setInput('');
+                        if (selectedImage) URL.revokeObjectURL(selectedImage);
                         setSelectedImage(null);
                         setBase64Image(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
                         setLayout('Default');
                         setPalette('Vibrant');
                       }}
@@ -691,7 +712,7 @@ export default function App() {
                     {/* Submit Button */}
                     <button 
                       onClick={handleGenerate}
-                      disabled={!input.trim() || state === 'generating'}
+                      disabled={!input.trim()}
                       className="bg-[#1F1F1F] text-white px-5 py-2 font-label text-sm hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 rounded-full"
                     >
                       <span>Execute ◁</span>
@@ -700,19 +721,20 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Quick Start Chips - Moved Under Chatbox and Smaller */}
+              {/* Quick Start Chips */}
               <div className="mb-12 flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
                 {[
-                  { label: "MrBeast Style", icon: Zap },
-                  { label: "Before/After", icon: RefreshCw },
-                  { label: "Curiosity Gap", icon: Eye },
-                  { label: "High Stakes", icon: Target },
-                  { label: "Luxury/Budget", icon: TrendingUp }
+                  { label: "MrBeast Style", prompt: "I gave $10,000 to a random stranger on the street", icon: Zap },
+                  { label: "Before/After", prompt: "I transformed my body in 30 days with no gym or diet", icon: RefreshCw },
+                  { label: "Curiosity Gap", prompt: "The one morning habit that changed my entire life", icon: Eye },
+                  { label: "High Stakes", prompt: "I quit my 9-5 job and started a business with only $100", icon: Target },
+                  { label: "Luxury vs Budget", prompt: "$10 vs $10,000 vacation — which one was actually better?", icon: TrendingUp }
                 ].map((chip, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setInput(chip.label)}
+                    onClick={() => { setInput(chip.prompt); handleGenerate(undefined, chip.prompt); }}
                     className="px-3 py-1.5 bg-[var(--color-surface)] neo-border neo-shadow-button hover:bg-[var(--color-secondary-yellow)] transition-all duration-300 flex items-center gap-2 font-label text-[10px] uppercase tracking-wider group"
+                    title={chip.prompt}
                   >
                     <chip.icon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                     {chip.label}
@@ -908,7 +930,7 @@ export default function App() {
                 
                 <div className="flex flex-col gap-4 bg-[var(--color-surface)] neo-border neo-shadow-card p-6 min-w-[240px]">
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-label text-[var(--color-on-surface)] uppercase opacity-60">Target Niche</span>
+                    <span className="text-xs font-label text-[var(--color-on-surface)] uppercase opacity-60">Niche</span>
                     <span className="text-sm font-label font-bold text-[var(--color-on-primary)] bg-[var(--color-secondary-blue)] neo-border px-3 py-1 uppercase inline-block w-fit">{results.niche_applied}</span>
                   </div>
                   <div className="flex flex-col gap-1">
