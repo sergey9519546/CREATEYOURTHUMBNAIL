@@ -33,8 +33,10 @@ const NICHE_EXAMPLES = [
 const STYLE_EXAMPLES = [
   { id: 'Adventure', icon: Mountain, title: 'Adventure', example: 'High energy, extreme stakes' },
   { id: 'Documentary', icon: Video, title: 'Documentary', example: 'Cinematic, narrative-driven' },
-  { id: 'Review', icon: Box, title: 'Tech Review', example: 'Clean, product-focused' },
+  { id: 'Review', icon: Box, title: 'Review', example: 'Clean, product-focused' },
   { id: 'Minimalist', icon: Palette, title: 'Minimalist', example: 'Aesthetic, highly curated' },
+  { id: 'Viral', icon: Zap, title: 'Viral', example: 'Shock value, trending hooks' },
+  { id: 'Tutorial', icon: BookOpen, title: 'Tutorial', example: 'Step-by-step, educational' },
 ];
 
 const COGNITIVE_STEPS = [
@@ -821,50 +823,78 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ── Config strips — niche + style as compact chips ── */}
-              <div className="max-w-4xl mx-auto w-full space-y-2 pt-4 border-t-2 border-[var(--color-accent-pencil)]/10">
-                {/* Niche strip */}
-                <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-0.5">
-                  <span className="text-[10px] font-label uppercase opacity-40 shrink-0 w-8 tracking-widest">Niche</span>
-                  {NICHE_EXAMPLES.map(n => {
-                    const Icon = n.icon;
-                    return (
-                      <button
-                        key={n.id}
-                        onClick={() => setNiche(n.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase shrink-0 neo-border transition-all duration-200 ${
-                          niche === n.id
-                            ? 'bg-[var(--color-secondary-blue)] text-white'
-                            : 'bg-[var(--color-surface)] text-[var(--color-on-surface)] hover:bg-[var(--color-secondary-yellow)]'
-                        }`}
-                      >
-                        <Icon className="w-3 h-3" />
-                        {n.title}
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* ── Config strips — niche + style ── */}
+              <div className="max-w-4xl mx-auto w-full pt-5 border-t-2 border-[var(--color-accent-pencil)]/10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                {/* Style strip */}
-                <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-0.5">
-                  <span className="text-[10px] font-label uppercase opacity-40 shrink-0 w-8 tracking-widest">Style</span>
-                  {STYLE_EXAMPLES.map(s => {
-                    const Icon = s.icon;
-                    return (
-                      <button
-                        key={s.id}
-                        onClick={() => setStylePreset(s.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase shrink-0 neo-border transition-all duration-200 ${
-                          stylePreset === s.id
-                            ? 'bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)]'
-                            : 'bg-[var(--color-surface)] text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)]'
-                        }`}
-                      >
-                        <Icon className="w-3 h-3" />
-                        {s.title}
-                      </button>
-                    );
-                  })}
+                  {/* Niche */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="block w-1 h-3.5 bg-[var(--color-secondary-blue)] shrink-0" />
+                      <span className="text-[10px] font-label uppercase tracking-widest opacity-50">Niche</span>
+                      <span className="ml-auto text-[10px] font-label font-bold uppercase text-[var(--color-secondary-blue)]">{niche}</span>
+                    </div>
+                    <div className="relative">
+                      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1 pr-6">
+                        {NICHE_EXAMPLES.map(n => {
+                          const Icon = n.icon;
+                          const active = niche === n.id;
+                          return (
+                            <button
+                              key={n.id}
+                              onClick={() => setNiche(n.id)}
+                              title={n.example}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase shrink-0 neo-border transition-all duration-200 ${
+                                active
+                                  ? 'bg-[var(--color-secondary-blue)] text-white neo-shadow-button scale-[1.04]'
+                                  : 'bg-[var(--color-surface)] text-[var(--color-on-surface)]/60 hover:text-[var(--color-on-surface)] hover:bg-[var(--color-surface-variant)]'
+                              }`}
+                            >
+                              <Icon className="w-3 h-3 shrink-0" />
+                              {n.title}
+                              {active && <span className="w-1 h-1 rounded-full bg-white/60 ml-0.5 shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-[var(--color-bg)] to-transparent pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Style */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="block w-1 h-3.5 bg-[var(--color-secondary-yellow)] shrink-0" />
+                      <span className="text-[10px] font-label uppercase tracking-widest opacity-50">Style</span>
+                      <span className="ml-auto text-[10px] font-label font-bold uppercase opacity-60">{stylePreset}</span>
+                    </div>
+                    <div className="relative">
+                      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1 pr-6">
+                        {STYLE_EXAMPLES.map(s => {
+                          const Icon = s.icon;
+                          const active = stylePreset === s.id;
+                          return (
+                            <button
+                              key={s.id}
+                              onClick={() => setStylePreset(s.id)}
+                              title={s.example}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase shrink-0 neo-border transition-all duration-200 ${
+                                active
+                                  ? 'bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)] neo-shadow-button scale-[1.04]'
+                                  : 'bg-[var(--color-surface)] text-[var(--color-on-surface)]/60 hover:text-[var(--color-on-surface)] hover:bg-[var(--color-surface-variant)]'
+                              }`}
+                            >
+                              <Icon className="w-3 h-3 shrink-0" />
+                              {s.title}
+                              {active && <span className="w-1 h-1 rounded-full bg-[var(--color-on-surface)]/40 ml-0.5 shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-[var(--color-bg)] to-transparent pointer-events-none" />
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </motion.div>
