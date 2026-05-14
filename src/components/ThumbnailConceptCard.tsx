@@ -1,6 +1,83 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw } from 'lucide-react';
+import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw, Heart, Send, Wand2 } from 'lucide-react';
+
+// Moved here from App.tsx — generates smart refinement suggestions based on concept data
+const getRefinementSuggestions = (hook: string, psychology: string): string[] => {
+  const h = hook.toLowerCase();
+  const p = psychology.toLowerCase();
+  const suggestions: Set<string> = new Set();
+
+  if (p.includes('curiosity') && h.includes('number')) {
+    suggestions.add("Make the number glow to increase focus");
+    suggestions.add("Use a '?' instead of a digit to amplify mystery");
+    suggestions.add("Partially obscure the number to create a curiosity gap");
+    suggestions.add("Use a 3D extruded font for the number for visual weight");
+    suggestions.add("Add a 'censored' bar over the number");
+  } else if (p.includes('fear') && h.includes('comparison')) {
+    suggestions.add("Make the 'bad' side darker to increase contrast");
+    suggestions.add("Add a warning sign to the 'bad' side");
+    suggestions.add("Use a red tint on the 'bad' side for urgency");
+    suggestions.add("Make the 'good' side brighter to enhance the contrast");
+  } else if (p.includes('joy') && h.includes('storytelling')) {
+    suggestions.add("Add a bright, happy background");
+    suggestions.add("Make the subject's expression more ecstatic");
+    suggestions.add("Use vibrant, warm colors to boost energy");
+    suggestions.add("Add a 'happy' narrative element to the background");
+  }
+
+  if (p.includes('curiosity') || p.includes('mystery')) {
+    suggestions.add("Add a '?' to the text to drive clicks");
+    suggestions.add("Blur the background more to push the subject forward");
+    suggestions.add("Make the main subject look surprised");
+    suggestions.add("Add a hidden object in the background");
+  } else if (p.includes('fear') || p.includes('urgency')) {
+    suggestions.add("Add a red border for urgency");
+    suggestions.add("Make the text bolder and more aggressive");
+    suggestions.add("Add a warning icon");
+    suggestions.add("Increase contrast for a starker, more dramatic look");
+  } else if (p.includes('joy') || p.includes('excitement')) {
+    suggestions.add("Increase color saturation to 100%");
+    suggestions.add("Add a smiling face with closed mouth (MrBeast strategy)");
+    suggestions.add("Make the lighting brighter and more positive");
+    suggestions.add("Add confetti or sparkles for energy");
+  } else if (p.includes('controversy')) {
+    suggestions.add("Use a more confrontational pose");
+    suggestions.add("Add a 'vs' element");
+    suggestions.add("Use high-contrast, aggressive typography");
+  }
+
+  if (h.includes('comparison') || h.includes('versus')) {
+    suggestions.add("Add a split-screen divider for clear story separation");
+    suggestions.add("Enhance the 'after' contrast");
+    suggestions.add("Make the 'before' desaturated");
+    suggestions.add("Use a 'before' and 'after' label");
+  } else if (h.includes('storytelling') || h.includes('narrative')) {
+    suggestions.add("Add a narrative element to the background");
+    suggestions.add("Make the subject look more expressive");
+    suggestions.add("Adjust lighting to focus on the subject");
+    suggestions.add("Add a background element that tells a story");
+  } else if (h.includes('authority') || h.includes('expert')) {
+    suggestions.add("Add a professional badge or icon");
+    suggestions.add("Make the text cleaner and more authoritative");
+    suggestions.add("Adjust lighting for a studio look");
+    suggestions.add("Use a more formal, clean background");
+  } else if (h.includes('listicle')) {
+    suggestions.add("Add a number badge for scannability");
+    suggestions.add("Use a grid layout for items");
+    suggestions.add("Make the text more scannable and bold");
+  }
+
+  if (suggestions.size === 0) {
+    suggestions.add("Increase text size for mobile readability");
+    suggestions.add("Boost subject brightness by 20%");
+    suggestions.add("Simplify the background to reduce noise");
+    suggestions.add("Add more detail to the primary subject");
+    suggestions.add("Use a more vibrant, high-contrast color palette");
+  }
+
+  return Array.from(suggestions).slice(0, 6);
+};
 
 interface ThumbnailConceptCardProps {
   concept: any;
@@ -13,10 +90,18 @@ interface ThumbnailConceptCardProps {
   getCTRScore: (concept: any) => number;
   handleRefine: (concept: any, feedback?: string) => void;
   setResults: React.Dispatch<React.SetStateAction<any>>;
+  toggleLike: (concept: any) => void;
+  likedConcepts: any[];
+  chatInputs: Record<number, string>;
+  setChatInputs: React.Dispatch<React.SetStateAction<Record<number, string>>>;
+  showRefinementFor: Record<number, boolean>;
+  setShowRefinementFor: React.Dispatch<React.SetStateAction<Record<number, boolean>>>;
 }
 
 export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
-  concept, idx, mobilePreviewFor, setMobilePreviewFor, imageEdits, setImageEdits, refiningConcepts, getCTRScore, handleRefine, setResults
+  concept, idx, mobilePreviewFor, setMobilePreviewFor, imageEdits, setImageEdits,
+  refiningConcepts, getCTRScore, handleRefine, setResults,
+  toggleLike, likedConcepts, chatInputs, setChatInputs, showRefinementFor, setShowRefinementFor
 }) => {
   const updateImageEdit = (conceptNumber: number, updates: Partial<any>) => {
     setImageEdits(prev => ({
@@ -33,8 +118,14 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
       }
     }));
   };
+
+  const isLiked = likedConcepts.some(c => c.concept_name === concept.concept_name);
+  const suggestions = getRefinementSuggestions(concept.hook || '', concept.psychology || '');
+  const chatInput = chatInputs[concept.concept_number] || '';
+  const showRefinement = showRefinementFor[concept.concept_number] || false;
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: idx * 0.15 }}
@@ -44,8 +135,8 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
       <div className="flex flex-col lg:flex-row border-b-4 border-[var(--color-accent-pencil)]">
         {/* Concept Header */}
         <div className="bg-[var(--color-surface-container)] p-8 lg:w-80 flex flex-col justify-between border-b-4 lg:border-b-0 lg:border-r-4 border-[var(--color-accent-pencil)] relative">
-          <button 
-            onClick={() => setResults(prev => prev ? { ...prev, thumbnails: prev.thumbnails.filter((t: any) => t.concept_number !== concept.concept_number) } : prev)}
+          <button
+            onClick={() => setResults((prev: any) => prev ? { ...prev, thumbnails: prev.thumbnails.filter((t: any) => t.concept_number !== concept.concept_number) } : prev)}
             className="absolute top-4 right-4 p-2 hover:bg-[var(--color-primary)] hover:text-[var(--color-on-primary)] transition-colors neo-button"
           >
             <X className="w-4 h-4" />
@@ -58,19 +149,28 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
               {concept.concept_name}
             </h4>
           </div>
+          {/* Like Button */}
+          <button
+            onClick={() => toggleLike(concept)}
+            className={`mt-6 flex items-center gap-2 px-4 py-2 neo-border neo-shadow-button font-label text-xs uppercase transition-all ${isLiked ? 'bg-[var(--color-primary)] text-white' : 'bg-white text-[var(--color-on-surface)] hover:bg-[var(--color-secondary-yellow)]'}`}
+            title={isLiked ? "Remove from references" : "Save as reference for next generation"}
+          >
+            <Heart className={`w-4 h-4 ${isLiked ? 'fill-white' : ''}`} />
+            {isLiked ? 'Referenced' : 'Use as Reference'}
+          </button>
         </div>
 
         {/* Image */}
         <div className="relative flex-1 aspect-video bg-[var(--color-surface-container)] group/image">
           <div className={`w-full h-full transition-all duration-500 ${mobilePreviewFor[concept.concept_number] ? 'scale-[0.15] origin-top-left translate-x-8 translate-y-8 shadow-2xl ring-8 ring-black' : 'scale-100'}`}>
             {concept.imageUrl ? (
-              <img 
-                src={concept.imageUrl} 
-                alt={concept.concept_name} 
-                className="w-full h-full object-cover img-sketch-filter" 
+              <img
+                src={concept.imageUrl}
+                alt={concept.concept_name}
+                className="w-full h-full object-cover img-sketch-filter"
                 referrerPolicy="no-referrer"
-                style={{ 
-                  filter: `brightness(${100 + (imageEdits[concept.concept_number]?.brightness || 0)}%) contrast(${100 + (imageEdits[concept.concept_number]?.contrast || 0)}%) saturate(${100 + (imageEdits[concept.concept_number]?.saturation || 0)}%)` 
+                style={{
+                  filter: `brightness(${100 + (imageEdits[concept.concept_number]?.brightness || 0)}%) contrast(${100 + (imageEdits[concept.concept_number]?.contrast || 0)}%) saturate(${100 + (imageEdits[concept.concept_number]?.saturation || 0)}%)`
                 }}
               />
             ) : (
@@ -80,7 +180,6 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
             )}
           </div>
 
-          {/* Mobile Preview Overlay */}
           {mobilePreviewFor[concept.concept_number] && (
             <div className="absolute inset-0 pointer-events-none flex items-end justify-end p-8">
               <div className="bg-black/80 text-white px-4 py-2 font-label text-xs uppercase tracking-widest neo-border">
@@ -89,16 +188,15 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
             </div>
           )}
 
-          {/* Image Actions Overlay */}
           <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover/image:opacity-100 transition-opacity z-20">
-            <button 
+            <button
               onClick={() => setMobilePreviewFor(prev => ({ ...prev, [concept.concept_number]: !prev[concept.concept_number] }))}
               className={`p-3 neo-border neo-shadow-button transition-all ${mobilePreviewFor[concept.concept_number] ? 'bg-[var(--color-secondary-yellow)] text-black' : 'bg-white text-black hover:bg-[var(--color-secondary-blue)] hover:text-white'}`}
               title="Toggle Mobile Preview"
             >
               <Smartphone className="w-5 h-5" />
             </button>
-            <button 
+            <button
               onClick={() => {
                 const link = document.createElement('a');
                 link.href = concept.imageUrl || '';
@@ -112,15 +210,13 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
             </button>
           </div>
 
-          {/* CTR Score Badge */}
           <div className="absolute top-4 left-4 z-20">
             <div className="bg-[var(--color-primary)] text-white px-4 py-2 neo-border neo-shadow-button flex flex-col items-center">
               <span className="text-[10px] font-label uppercase opacity-80 leading-none">Est. CTR</span>
               <span className="text-2xl font-headline font-bold leading-none">{getCTRScore(concept)}%</span>
             </div>
           </div>
-          
-          {/* Refinement Loading Overlay */}
+
           {refiningConcepts[concept.concept_number] && (
             <div className="absolute inset-0 bg-[var(--color-background)]/80 backdrop-blur-sm flex items-center justify-center z-10">
               <div className="flex items-center gap-3 bg-[var(--color-surface)] text-[var(--color-primary)] px-8 py-4 neo-border neo-shadow-button font-label text-lg uppercase">
@@ -186,9 +282,8 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
 
         {/* Visual Hierarchy Controls */}
         <div className="p-8 bg-[var(--color-surface)] space-y-8 relative overflow-hidden">
-          {/* Decorative Blueprint Lines */}
           <div className="absolute top-0 right-0 w-32 h-32 border-r-2 border-t-2 border-[var(--color-accent-pencil)] opacity-10 pointer-events-none" />
-          
+
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-[var(--color-secondary-yellow)] neo-border">
               <Target className="w-5 h-5" />
@@ -205,14 +300,14 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
                 </label>
                 <span className="text-xs font-mono font-bold bg-black text-white px-2 py-0.5">{imageEdits[concept.concept_number]?.subjectSize || 5}/10</span>
               </div>
-              <input 
-                type="range" min="1" max="10" 
+              <input
+                type="range" min="1" max="10"
                 value={imageEdits[concept.concept_number]?.subjectSize || 5}
                 onChange={(e) => updateImageEdit(concept.concept_number, { subjectSize: parseInt(e.target.value) })}
                 className="w-full h-4 bg-[var(--color-surface-container)] neo-border appearance-none cursor-pointer accent-[var(--color-primary)]"
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-4">
                 <label className="text-xs font-label uppercase font-bold flex items-center gap-2">
@@ -249,7 +344,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
                 </div>
               </div>
             </div>
-            
+
             <button
               onClick={() => {
                 const edit = imageEdits[concept.concept_number];
@@ -263,6 +358,73 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Bottom Section: AI Chat Refinement */}
+      <div className="p-8 bg-[var(--color-surface-container)] border-t-0">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-[var(--color-primary)] neo-border">
+              <Wand2 className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-headline text-lg font-bold uppercase tracking-tight">AI Feedback</span>
+          </div>
+          <button
+            onClick={() => setShowRefinementFor(prev => ({ ...prev, [concept.concept_number]: !showRefinement }))}
+            className={`px-4 py-2 neo-border neo-shadow-button font-label text-xs uppercase transition-all ${showRefinement ? 'bg-[var(--color-primary)] text-white' : 'bg-white text-[var(--color-on-surface)] hover:bg-[var(--color-secondary-yellow)]'}`}
+          >
+            {showRefinement ? 'Close' : 'Open Feedback'}
+          </button>
+        </div>
+
+        {showRefinement && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-4 overflow-hidden"
+          >
+            {/* Suggestion chips */}
+            <div>
+              <p className="text-xs font-label uppercase opacity-60 mb-3">Quick Suggestions</p>
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setChatInputs(prev => ({ ...prev, [concept.concept_number]: s }))}
+                    className={`px-3 py-1.5 text-xs font-label uppercase neo-border transition-all hover:bg-[var(--color-secondary-yellow)] ${chatInput === s ? 'bg-[var(--color-secondary-yellow)]' : 'bg-white'}`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Text input */}
+            <div className="flex gap-3 items-end">
+              <textarea
+                value={chatInput}
+                onChange={(e) => setChatInputs(prev => ({ ...prev, [concept.concept_number]: e.target.value }))}
+                placeholder="Describe what to change (or click a suggestion above)..."
+                className="flex-1 p-3 bg-white neo-border font-body text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-none min-h-[60px] text-[#1F1F1F] placeholder:text-gray-400"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (chatInput.trim()) handleRefine(concept);
+                  }
+                }}
+              />
+              <button
+                onClick={() => { if (chatInput.trim()) handleRefine(concept); }}
+                disabled={!chatInput.trim() || refiningConcepts[concept.concept_number]}
+                className="p-3 bg-[var(--color-primary)] text-white neo-border neo-shadow-button hover:bg-[var(--color-primary-dim)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-label text-sm uppercase"
+              >
+                <Send className="w-4 h-4" />
+                Refine
+              </button>
+            </div>
+          </motion.div>
+        )}
       </div>
     </motion.div>
   );

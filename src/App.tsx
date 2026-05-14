@@ -37,86 +37,6 @@ const STYLE_EXAMPLES = [
   { id: 'Minimalist', icon: Palette, title: 'Minimalist', example: 'Aesthetic, highly curated' },
 ];
 
-const getRefinementSuggestions = (hook: string, psychology: string): string[] => {
-  const h = hook.toLowerCase();
-  const p = psychology.toLowerCase();
-  const suggestions: Set<string> = new Set();
-
-  // 1. Specific Strategy Combinations
-  if (p.includes('curiosity') && h.includes('number')) {
-    suggestions.add("Make the number glow to increase focus");
-    suggestions.add("Use a '?' instead of a digit to amplify mystery");
-    suggestions.add("Partially obscure the number to create a curiosity gap");
-    suggestions.add("Use a 3D extruded font for the number for visual weight");
-    suggestions.add("Add a 'censored' bar over the number");
-  } else if (p.includes('fear') && h.includes('comparison')) {
-    suggestions.add("Make the 'bad' side darker to increase contrast");
-    suggestions.add("Add a warning sign to the 'bad' side");
-    suggestions.add("Use a red tint on the 'bad' side for urgency");
-    suggestions.add("Make the 'good' side brighter to enhance the contrast");
-  } else if (p.includes('joy') && h.includes('storytelling')) {
-    suggestions.add("Add a bright, happy background");
-    suggestions.add("Make the subject's expression more ecstatic");
-    suggestions.add("Use vibrant, warm colors to boost energy");
-    suggestions.add("Add a 'happy' narrative element to the background");
-  }
-
-  // 2. Trigger-based refinements (Pillar 2: Face & Emotion, Pillar 5: Curiosity Gap)
-  if (p.includes('curiosity') || p.includes('mystery')) {
-    suggestions.add("Add a '?' to the text to drive clicks");
-    suggestions.add("Blur the background more to push the subject forward");
-    suggestions.add("Make the main subject look surprised");
-    suggestions.add("Add a hidden object in the background");
-  } else if (p.includes('fear') || p.includes('urgency')) {
-    suggestions.add("Add a red border for urgency");
-    suggestions.add("Make the text bolder and more aggressive");
-    suggestions.add("Add a warning icon");
-    suggestions.add("Increase contrast for a starker, more dramatic look");
-  } else if (p.includes('joy') || p.includes('excitement')) {
-    suggestions.add("Increase color saturation to 100%");
-    suggestions.add("Add a smiling face with closed mouth (MrBeast strategy)");
-    suggestions.add("Make the lighting brighter and more positive");
-    suggestions.add("Add confetti or sparkles for energy");
-  } else if (p.includes('controversy')) {
-    suggestions.add("Use a more confrontational pose");
-    suggestions.add("Add a 'vs' element");
-    suggestions.add("Use high-contrast, aggressive typography");
-  }
-
-  // 3. Hook-based refinements (Pillar 1: Single Story, Pillar 4: Text Strategy, Pillar 6: Visual Hierarchy)
-  if (h.includes('comparison') || h.includes('versus')) {
-    suggestions.add("Add a split-screen divider for clear story separation");
-    suggestions.add("Enhance the 'after' contrast");
-    suggestions.add("Make the 'before' desaturated");
-    suggestions.add("Use a 'before' and 'after' label");
-  } else if (h.includes('storytelling') || h.includes('narrative')) {
-    suggestions.add("Add a narrative element to the background");
-    suggestions.add("Make the subject look more expressive");
-    suggestions.add("Adjust lighting to focus on the subject");
-    suggestions.add("Add a background element that tells a story");
-  } else if (h.includes('authority') || h.includes('expert')) {
-    suggestions.add("Add a professional badge or icon");
-    suggestions.add("Make the text cleaner and more authoritative");
-    suggestions.add("Adjust lighting for a studio look");
-    suggestions.add("Use a more formal, clean background");
-  } else if (h.includes('listicle')) {
-    suggestions.add("Add a number badge for scannability");
-    suggestions.add("Use a grid layout for items");
-    suggestions.add("Make the text more scannable and bold");
-  }
-
-  // Fallback
-  if (suggestions.size === 0) {
-    suggestions.add("Increase text size for mobile readability");
-    suggestions.add("Boost subject brightness by 20%");
-    suggestions.add("Simplify the background to reduce noise");
-    suggestions.add("Add more detail to the primary subject");
-    suggestions.add("Use a more vibrant, high-contrast color palette");
-  }
-  
-  return Array.from(suggestions).slice(0, 6);
-};
-
 const COGNITIVE_STEPS = [
   { text: "Analyzing visual psychology triggers...", icon: Eye },
   { text: "Optimizing color contrast for mobile...", icon: Palette },
@@ -125,8 +45,8 @@ const COGNITIVE_STEPS = [
   { text: "Finalizing high-CTR layout...", icon: Target }
 ];
 
-const SettingsDrawer = ({ 
-  isOpen, onClose, niche, setNiche, stylePreset, setStylePreset,
+const SettingsDrawer = ({
+  isOpen, onClose,
   aspectRatio, setAspectRatio, resolution, setResolution, saturation, setSaturation,
   onSelectKey
 }: any) => {
@@ -286,7 +206,8 @@ export default function App() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // For preview
+      // Revoke previous blob URL to prevent memory leak
+      if (selectedImage) URL.revokeObjectURL(selectedImage);
       const previewUrl = URL.createObjectURL(file);
       setSelectedImage(previewUrl);
 
@@ -435,13 +356,9 @@ export default function App() {
       <main className="flex-1 flex flex-col relative overflow-y-auto bg-[var(--color-bg)]">
         
         
-        <SettingsDrawer 
-          isOpen={isSettingsOpen} 
-          onClose={() => setIsSettingsOpen(false)} 
-          niche={niche} 
-          setNiche={setNiche} 
-          stylePreset={stylePreset} 
-          setStylePreset={setStylePreset}
+        <SettingsDrawer
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
           aspectRatio={aspectRatio}
           setAspectRatio={setAspectRatio}
           resolution={resolution}
@@ -568,8 +485,8 @@ export default function App() {
                     >
                       <ImageIcon className="w-4 h-4 text-gray-500" />
                       <span className="text-sm text-gray-700 truncate max-w-[120px]">ref_img.jpg</span>
-                      <button 
-                        onClick={() => setSelectedImage(null)}
+                      <button
+                        onClick={() => { setSelectedImage(null); setBase64Image(null); }}
                         className="text-gray-400 hover:text-gray-600"
                         title="Delete"
                       >
@@ -642,38 +559,6 @@ export default function App() {
                             {p}
                           </button>
                         ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Subject Upload Preview */}
-                <AnimatePresence>
-                  {selectedImage && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      className="mb-4 relative inline-block"
-                    >
-                      <div className="relative group">
-                        <div className="w-24 h-24 neo-border overflow-hidden bg-white neo-shadow-button">
-                          <img 
-                            src={selectedImage} 
-                            alt="Subject Reference" 
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        </div>
-                        <button 
-                          onClick={() => setSelectedImage(null)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white p-1 neo-border hover:bg-red-600 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold px-2 py-0.5 uppercase tracking-tighter whitespace-nowrap">
-                          Subject Locked
-                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -760,7 +645,7 @@ export default function App() {
                       <Trash2 className="w-5 h-5" />
                     </button>
                     {/* Layout/Add Icon */}
-                    <button 
+                    <button
                       onClick={() => {
                         setLayoutMode(!layoutMode);
                         setPaletteMode(false);
@@ -770,6 +655,14 @@ export default function App() {
                     >
                       <LayoutTemplate className="w-5 h-5" />
                       {layout !== 'Default' && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-black rounded-full" />}
+                    </button>
+                    {/* Include Face Toggle */}
+                    <button
+                      onClick={() => setIncludeFace(!includeFace)}
+                      className={`p-2 transition-colors flex items-center justify-center rounded-lg ${!includeFace ? 'bg-[var(--color-secondary-yellow)] text-black' : 'hover:bg-gray-200 text-gray-600'}`}
+                      title={includeFace ? "Face included — click to disable" : "No face (ghost mode) — click to enable"}
+                    >
+                      <Ghost className="w-5 h-5" />
                     </button>
                   </div>
 
@@ -1028,7 +921,7 @@ export default function App() {
               {/* Concepts Feed */}
               <div className="space-y-12">
                 {results.thumbnails.map((concept, idx) => (
-                  <ThumbnailConceptCard 
+                  <ThumbnailConceptCard
                     key={concept.concept_number}
                     concept={concept}
                     idx={idx}
@@ -1040,6 +933,12 @@ export default function App() {
                     getCTRScore={getCTRScore}
                     handleRefine={handleRefine}
                     setResults={setResults}
+                    toggleLike={toggleLike}
+                    likedConcepts={likedConcepts}
+                    chatInputs={chatInputs}
+                    setChatInputs={setChatInputs}
+                    showRefinementFor={showRefinementFor}
+                    setShowRefinementFor={setShowRefinementFor}
                   />
                 ))}
               </div>
@@ -1065,11 +964,3 @@ export default function App() {
   );
 }
 
-function DataRow({ label, value }: { label: string, value: string }) {
-  return (
-    <div className="space-y-3 flex flex-col items-center">
-      <span className="text-sm font-label font-bold text-[var(--color-on-surface)] uppercase">{label}</span>
-      <p className="text-2xl text-[var(--color-on-surface)] leading-relaxed font-body">{value}</p>
-    </div>
-  );
-}
