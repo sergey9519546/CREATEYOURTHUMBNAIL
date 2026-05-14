@@ -375,7 +375,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
                   {['top', 'center', 'bottom'].map((pos) => (
                     <button
                       key={pos}
-                      onClick={() => updateImageEdit(concept.concept_number, { textPosition: pos as any })}
+                      onClick={() => updateImageEdit(concept.concept_number, { textPosition: pos as 'top' | 'center' | 'bottom' })}
                       className={`py-2 text-[10px] font-label uppercase transition-all ${imageEdits[concept.concept_number]?.textPosition === pos || (!imageEdits[concept.concept_number]?.textPosition && pos === 'center') ? 'bg-black text-white' : 'hover:bg-white'}`}
                     >
                       {pos}
@@ -392,7 +392,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
                   {['subject', 'text', 'balanced'].map((emp) => (
                     <button
                       key={emp}
-                      onClick={() => updateImageEdit(concept.concept_number, { emphasis: emp as any })}
+                      onClick={() => updateImageEdit(concept.concept_number, { emphasis: emp as 'subject' | 'text' | 'balanced' })}
                       className={`py-2 text-[10px] font-label uppercase transition-all ${imageEdits[concept.concept_number]?.emphasis === emp || (!imageEdits[concept.concept_number]?.emphasis && emp === 'balanced') ? 'bg-black text-white' : 'hover:bg-white'}`}
                     >
                       {emp}
