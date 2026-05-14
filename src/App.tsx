@@ -637,19 +637,19 @@ export default function App() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mb-3 p-3 bg-gray-100 rounded-xl text-sm text-gray-700 border border-gray-200 flex flex-col gap-2 overflow-hidden"
+                      className="mb-3 p-4 bg-[var(--color-surface-container)] neo-border flex flex-col gap-3 overflow-hidden"
                     >
                       <div className="flex justify-between items-center">
-                        <span className="font-bold">Select Layout</span>
-                        <div className="flex gap-2">
-                          {layout !== 'Default' && <button onClick={() => setLayout('Default')} className="text-xs text-gray-500 hover:text-black">Reset</button>}
-                          <button onClick={() => setLayoutMode(false)} className="text-gray-500 hover:text-black"><X className="w-4 h-4" /></button>
+                        <span className="text-[10px] font-label font-bold uppercase tracking-widest">Layout</span>
+                        <div className="flex gap-3 items-center">
+                          {layout !== 'Default' && <button onClick={() => setLayout('Default')} className="text-[9px] font-label uppercase opacity-40 hover:opacity-100 transition-opacity">Reset</button>}
+                          <button onClick={() => setLayoutMode(false)} className="opacity-40 hover:opacity-100 transition-opacity"><X className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1.5">
                         {['Default', 'Split Screen', 'Centered Subject', 'Grid'].map(l => (
                           <button key={l} onClick={() => { setLayout(l); setLayoutMode(false); }}
-                            className={`px-3 py-1 rounded-full text-xs ${layout === l ? 'bg-black text-white' : 'bg-white border border-gray-300'}`}>
+                            className={`px-3 py-1.5 text-[10px] font-label uppercase border-2 transition-all ${layout === l ? 'border-black bg-black text-white' : 'border-black/10 bg-[var(--color-surface)] text-[var(--color-on-surface)]/50 hover:border-black/30 hover:text-[var(--color-on-surface)]'}`}>
                             {l}
                           </button>
                         ))}
@@ -661,19 +661,19 @@ export default function App() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mb-3 p-3 bg-gray-100 rounded-xl text-sm text-gray-700 border border-gray-200 flex flex-col gap-2 overflow-hidden"
+                      className="mb-3 p-4 bg-[var(--color-surface-container)] neo-border flex flex-col gap-3 overflow-hidden"
                     >
                       <div className="flex justify-between items-center">
-                        <span className="font-bold">Select Palette</span>
-                        <div className="flex gap-2">
-                          {palette !== 'Vibrant' && <button onClick={() => setPalette('Vibrant')} className="text-xs text-gray-500 hover:text-black">Reset</button>}
-                          <button onClick={() => setPaletteMode(false)} className="text-gray-500 hover:text-black"><X className="w-4 h-4" /></button>
+                        <span className="text-[10px] font-label font-bold uppercase tracking-widest">Palette</span>
+                        <div className="flex gap-3 items-center">
+                          {palette !== 'Vibrant' && <button onClick={() => setPalette('Vibrant')} className="text-[9px] font-label uppercase opacity-40 hover:opacity-100 transition-opacity">Reset</button>}
+                          <button onClick={() => setPaletteMode(false)} className="opacity-40 hover:opacity-100 transition-opacity"><X className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1.5">
                         {['Vibrant', 'Minimalist', 'Dark Mode', 'High Contrast'].map(p => (
                           <button key={p} onClick={() => { setPalette(p); setPaletteMode(false); }}
-                            className={`px-3 py-1 rounded-full text-xs ${palette === p ? 'bg-black text-white' : 'bg-white border border-gray-300'}`}>
+                            className={`px-3 py-1.5 text-[10px] font-label uppercase border-2 transition-all ${palette === p ? 'border-black bg-black text-white' : 'border-black/10 bg-[var(--color-surface)] text-[var(--color-on-surface)]/50 hover:border-black/30 hover:text-[var(--color-on-surface)]'}`}>
                             {p}
                           </button>
                         ))}
@@ -729,14 +729,15 @@ export default function App() {
 
                 {/* Tool row */}
                 <div className="flex items-center justify-between w-full pt-3 border-t border-[rgba(0,0,0,0.05)]">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className={`p-2 transition-colors flex items-center justify-center rounded-lg ${selectedImage ? 'bg-[var(--color-secondary-yellow)] text-black' : 'hover:bg-gray-200 text-gray-600'}`}
-                      title="Upload Subject/Character"
+                      className={`px-2 py-1.5 transition-colors flex flex-col items-center gap-0.5 rounded-lg ${selectedImage ? 'bg-[var(--color-secondary-yellow)] text-black' : 'hover:bg-gray-100 text-gray-500'}`}
+                      title="Upload a reference image"
                     >
-                      <ImageIcon className="w-5 h-5" />
+                      <ImageIcon className="w-4 h-4" />
+                      <span className="text-[7px] font-label uppercase leading-none">Photo</span>
                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                     </button>
                     <button
@@ -750,48 +751,53 @@ export default function App() {
                         setLayout('Default');
                         setPalette('Vibrant');
                       }}
-                      className="p-2 hover:bg-red-100 text-gray-600 hover:text-red-600 transition-colors flex items-center justify-center rounded-lg"
-                      title="Clear All"
+                      className="px-2 py-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors flex flex-col items-center gap-0.5 rounded-lg"
+                      title="Clear everything"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="w-4 h-4" />
+                      <span className="text-[7px] font-label uppercase leading-none">Clear</span>
                     </button>
                     <button
                       onClick={() => { setLayoutMode(!layoutMode); setPaletteMode(false); }}
-                      className={`relative p-2 transition-colors flex items-center justify-center rounded-lg ${layoutMode ? 'bg-gray-300 text-black' : 'hover:bg-gray-200 text-gray-600'}`}
-                      title="Toggle Layout Mode"
+                      className={`relative px-2 py-1.5 transition-colors flex flex-col items-center gap-0.5 rounded-lg ${layoutMode ? 'bg-gray-200 text-black' : 'hover:bg-gray-100 text-gray-500'}`}
+                      title="Set composition layout"
                     >
-                      <LayoutTemplate className="w-5 h-5" />
-                      {layout !== 'Default' && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-black rounded-full" />}
+                      <LayoutTemplate className="w-4 h-4" />
+                      <span className="text-[7px] font-label uppercase leading-none">Layout</span>
+                      {layout !== 'Default' && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full" />}
                     </button>
                     <button
                       onClick={() => setIncludeFace(!includeFace)}
-                      className={`p-2 transition-colors flex items-center justify-center rounded-lg ${!includeFace ? 'bg-[var(--color-secondary-yellow)] text-black' : 'hover:bg-gray-200 text-gray-600'}`}
-                      title={includeFace ? "Face included — click to disable" : "No face (ghost mode) — click to enable"}
+                      className={`px-2 py-1.5 transition-colors flex flex-col items-center gap-0.5 rounded-lg ${!includeFace ? 'bg-[var(--color-secondary-yellow)] text-black' : 'hover:bg-gray-100 text-gray-500'}`}
+                      title={includeFace ? "Face included — click to exclude" : "No face — click to include"}
                     >
-                      <Ghost className="w-5 h-5" />
+                      <Ghost className="w-4 h-4" />
+                      <span className="text-[7px] font-label uppercase leading-none">{includeFace ? 'Face' : 'No Face'}</span>
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setIsSettingsOpen(true)}
-                      className="p-2 hover:bg-gray-200 text-gray-600 transition-colors flex items-center justify-center rounded-lg"
-                      title="Settings"
-                    >
-                      <Settings className="w-5 h-5" />
-                    </button>
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => { setPaletteMode(!paletteMode); setLayoutMode(false); }}
-                      className={`relative p-2 transition-colors flex items-center justify-center rounded-lg ${paletteMode ? 'bg-gray-300 text-black' : 'hover:bg-gray-200 text-gray-600'}`}
-                      title="Toggle Palette Mode"
+                      className={`relative px-2 py-1.5 transition-colors flex flex-col items-center gap-0.5 rounded-lg ${paletteMode ? 'bg-gray-200 text-black' : 'hover:bg-gray-100 text-gray-500'}`}
+                      title="Set color palette"
                     >
-                      <Palette className="w-5 h-5" />
-                      {palette !== 'Vibrant' && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-black rounded-full" />}
+                      <Palette className="w-4 h-4" />
+                      <span className="text-[7px] font-label uppercase leading-none">Palette</span>
+                      {palette !== 'Vibrant' && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full" />}
+                    </button>
+                    <button
+                      onClick={() => setIsSettingsOpen(true)}
+                      className="px-2 py-1.5 hover:bg-gray-100 text-gray-500 transition-colors flex flex-col items-center gap-0.5 rounded-lg"
+                      title="Image generation settings"
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span className="text-[7px] font-label uppercase leading-none">Settings</span>
                     </button>
                     <button
                       onClick={handleGenerate}
                       disabled={!input.trim()}
-                      className="bg-[var(--color-on-surface)] text-[var(--color-bg)] px-5 py-2 font-label text-sm hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 rounded-full"
+                      className="ml-1 bg-[var(--color-on-surface)] text-[var(--color-bg)] px-5 py-2 font-label text-sm hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 rounded-full"
                     >
                       Execute ◁
                     </button>
@@ -986,32 +992,28 @@ export default function App() {
               className="max-w-5xl mx-auto w-full px-6 py-12 space-y-12"
             >
               {/* Header */}
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                <div className="space-y-3 flex-1 min-w-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[var(--color-primary)] flex items-center justify-center neo-border neo-shadow-button shrink-0">
-                      <Sparkles className="w-5 h-5 text-[var(--color-on-primary)]" />
-                    </div>
-                    <h3 className="text-2xl md:text-4xl font-headline font-bold text-[var(--color-on-surface)] leading-tight">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="w-9 h-9 bg-[var(--color-primary)] flex items-center justify-center neo-border neo-shadow-button shrink-0 mt-0.5">
+                    <Sparkles className="w-4 h-4 text-[var(--color-on-primary)]" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-2xl md:text-3xl font-headline font-bold text-[var(--color-on-surface)] leading-tight">
                       {results.video_context_summary}
                     </h3>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="text-[10px] font-label bg-[var(--color-secondary-blue)] text-white px-2.5 py-1 neo-border uppercase">{results.niche_applied}</span>
+                      <span className="text-[10px] font-label bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)] px-2.5 py-1 neo-border uppercase">{results.style_preset_applied}</span>
+                    </div>
                   </div>
-                  <p className="text-lg text-[var(--color-on-surface)]/60 font-body pl-1">"{input}"</p>
                 </div>
-
-                <div className="flex flex-col gap-3 shrink-0 items-start md:items-end">
-                  <div className="flex gap-2 flex-wrap">
-                    <span className="text-xs font-label bg-[var(--color-secondary-blue)] text-white px-3 py-1.5 neo-border uppercase">{results.niche_applied}</span>
-                    <span className="text-xs font-label bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)] px-3 py-1.5 neo-border uppercase">{results.style_preset_applied}</span>
-                  </div>
-                  <button
-                    onClick={handleNewSession}
-                    className="flex items-center gap-2 px-4 py-2 bg-[var(--color-surface)] neo-border neo-shadow-button font-label text-xs uppercase hover:bg-[var(--color-secondary-yellow)] transition-all"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    New Session
-                  </button>
-                </div>
+                <button
+                  onClick={handleNewSession}
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--color-surface)] neo-border neo-shadow-button font-label text-xs uppercase hover:bg-[var(--color-secondary-yellow)] transition-all shrink-0"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  New Session
+                </button>
               </div>
 
               {/* Concepts Feed */}
@@ -1041,11 +1043,11 @@ export default function App() {
               </div>
 
               {/* Generate More */}
-              <div className="text-center py-4 border-t-2 border-[var(--color-accent-pencil)]/10">
+              <div className="py-2">
                 <button
                   onClick={handleGenerateMore}
                   disabled={isGeneratingMore}
-                  className="inline-flex items-center gap-3 px-8 py-4 bg-[var(--color-surface)] neo-border neo-shadow-card font-label uppercase text-sm hover:bg-[var(--color-secondary-yellow)] transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                  className="w-full py-6 flex items-center justify-center gap-3 font-label uppercase text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed group border-2 border-dashed border-[var(--color-accent-pencil)]/20 hover:border-[var(--color-on-surface)] hover:bg-[var(--color-secondary-yellow)] bg-transparent"
                 >
                   {isGeneratingMore ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Generating More Concepts...</>
