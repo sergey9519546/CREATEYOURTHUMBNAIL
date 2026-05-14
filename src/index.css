@@ -7,7 +7,7 @@
   --color-secondary-blue: #0074D9;
   --color-secondary-yellow: #FFDC00;
   --color-accent-pencil: #000000;
-  --color-bg: #FFFFFF;
+  --color-bg: #fdfbf7;
   --color-surface: #FFFFFF;
   --color-surface-container: #F5F5F5;
   --color-surface-variant: #ECEFF1;
@@ -112,4 +112,13 @@
 /* Organic hand-drawn blob shape for icon containers */
 .neo-doodle-radius {
   border-radius: 60% 40% 55% 45% / 45% 55% 40% 60%;
+}
+
+/* Hide scrollbar on chip strips while keeping scroll behaviour */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

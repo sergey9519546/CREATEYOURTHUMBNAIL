@@ -1,8 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw, Heart, Send, Wand2 } from 'lucide-react';
+import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw, Heart, Send, Wand2, Copy, AlertCircle } from 'lucide-react';
 
-// Moved here from App.tsx — generates smart refinement suggestions based on concept data
 const getRefinementSuggestions = (hook: string, psychology: string): string[] => {
   const h = hook.toLowerCase();
   const p = psychology.toLowerCase();
@@ -89,6 +88,7 @@ interface ThumbnailConceptCardProps {
   refiningConcepts: Record<number, boolean>;
   getCTRScore: (concept: any) => number;
   handleRefine: (concept: any, feedback?: string) => void;
+  handleRegenerateImage: (concept: any) => void;
   setResults: React.Dispatch<React.SetStateAction<any>>;
   toggleLike: (concept: any) => void;
   likedConcepts: any[];
@@ -100,9 +100,11 @@ interface ThumbnailConceptCardProps {
 
 export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
   concept, idx, mobilePreviewFor, setMobilePreviewFor, imageEdits, setImageEdits,
-  refiningConcepts, getCTRScore, handleRefine, setResults,
+  refiningConcepts, getCTRScore, handleRefine, handleRegenerateImage, setResults,
   toggleLike, likedConcepts, chatInputs, setChatInputs, showRefinementFor, setShowRefinementFor
 }) => {
+  const [copied, setCopied] = React.useState(false);
+
   const updateImageEdit = (conceptNumber: number, updates: Partial<any>) => {
     setImageEdits(prev => ({
       ...prev,
@@ -119,10 +121,18 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
     }));
   };
 
+  const copyPrompt = () => {
+    navigator.clipboard.writeText(concept.image_generation_prompt).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }).catch(() => {});
+  };
+
   const isLiked = likedConcepts.some(c => c.concept_name === concept.concept_name);
   const suggestions = getRefinementSuggestions(concept.hook || '', concept.psychology || '');
   const chatInput = chatInputs[concept.concept_number] || '';
   const showRefinement = showRefinementFor[concept.concept_number] || false;
+  const isRefining = refiningConcepts[concept.concept_number] || false;
 
   return (
     <motion.div
@@ -131,8 +141,9 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
       transition={{ delay: idx * 0.15 }}
       className="bg-[var(--color-surface)] neo-card neo-shadow-card overflow-hidden flex flex-col group"
     >
-      {/* Top Section: Header + Image */}
+      {/* Top: Header + Image */}
       <div className="flex flex-col lg:flex-row border-b-4 border-[var(--color-accent-pencil)]">
+
         {/* Concept Header */}
         <div className="bg-[var(--color-surface-container)] p-8 lg:w-80 flex flex-col justify-between border-b-4 lg:border-b-0 lg:border-r-4 border-[var(--color-accent-pencil)] relative">
           <button
@@ -149,7 +160,6 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
               {concept.concept_name}
             </h4>
           </div>
-          {/* Like Button */}
           <button
             onClick={() => toggleLike(concept)}
             className={`mt-6 flex items-center gap-2 px-4 py-2 neo-border neo-shadow-button font-label text-xs uppercase transition-all ${isLiked ? 'bg-[var(--color-primary)] text-white' : 'bg-white text-[var(--color-on-surface)] hover:bg-[var(--color-secondary-yellow)]'}`}
@@ -173,9 +183,22 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
                   filter: `brightness(${100 + (imageEdits[concept.concept_number]?.brightness || 0)}%) contrast(${100 + (imageEdits[concept.concept_number]?.contrast || 0)}%) saturate(${100 + (imageEdits[concept.concept_number]?.saturation || 0)}%)`
                 }}
               />
-            ) : (
+            ) : isRefining ? (
               <div className="w-full h-full flex items-center justify-center">
                 <Loader2 className="w-12 h-12 text-[var(--color-primary)] animate-spin" />
+              </div>
+            ) : (
+              /* Image failed — show retry UI */
+              <div className="w-full h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
+                <AlertCircle className="w-10 h-10 text-[var(--color-on-surface)]/30" />
+                <p className="text-xs font-label uppercase opacity-40 tracking-widest">Image generation failed</p>
+                <button
+                  onClick={() => handleRegenerateImage(concept)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white neo-button neo-shadow-button font-label text-xs uppercase hover:bg-[var(--color-primary-dim)] transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Retry
+                </button>
               </div>
             )}
           </div>
@@ -188,6 +211,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
             </div>
           )}
 
+          {/* Image overlay buttons (visible on hover) */}
           <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover/image:opacity-100 transition-opacity z-20">
             <button
               onClick={() => setMobilePreviewFor(prev => ({ ...prev, [concept.concept_number]: !prev[concept.concept_number] }))}
@@ -196,6 +220,14 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
             >
               <Smartphone className="w-5 h-5" />
             </button>
+            {/* Re-roll image */}
+            <button
+              onClick={() => handleRegenerateImage(concept)}
+              className="p-3 bg-white text-black neo-border neo-shadow-button hover:bg-[var(--color-secondary-yellow)] transition-all"
+              title="Re-roll Image"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
             <button
               onClick={() => {
                 const link = document.createElement('a');
@@ -203,13 +235,15 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
                 link.download = `thumbnail-concept-${concept.concept_number}.png`;
                 link.click();
               }}
-              className="p-3 bg-white text-black neo-border neo-shadow-button hover:bg-[var(--color-secondary-blue)] hover:text-white transition-all"
+              disabled={!concept.imageUrl}
+              className="p-3 bg-white text-black neo-border neo-shadow-button hover:bg-[var(--color-secondary-blue)] hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               title="Download Asset"
             >
               <Download className="w-5 h-5" />
             </button>
           </div>
 
+          {/* CTR badge */}
           <div className="absolute top-4 left-4 z-20">
             <div className="bg-[var(--color-primary)] text-white px-4 py-2 neo-border neo-shadow-button flex flex-col items-center">
               <span className="text-[10px] font-label uppercase opacity-80 leading-none">Est. CTR</span>
@@ -217,7 +251,8 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
             </div>
           </div>
 
-          {refiningConcepts[concept.concept_number] && (
+          {/* Refining overlay */}
+          {isRefining && (
             <div className="absolute inset-0 bg-[var(--color-bg)]/80 backdrop-blur-sm flex items-center justify-center z-10">
               <div className="flex items-center gap-3 bg-[var(--color-surface)] text-[var(--color-primary)] px-8 py-4 neo-border neo-shadow-button font-label text-lg uppercase">
                 <Loader2 className="w-6 h-6 animate-spin" />
@@ -228,8 +263,9 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
         </div>
       </div>
 
-      {/* Middle Section: Details + Controls */}
+      {/* Middle: Details + Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-2 border-b-4 border-[var(--color-accent-pencil)]">
+
         {/* Concept Details */}
         <div className="p-8 bg-[var(--color-surface)] lg:border-r-4 border-[var(--color-accent-pencil)] space-y-8">
           <div className="grid grid-cols-2 gap-8">
@@ -278,12 +314,24 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
             </span>
             <p className="text-sm font-body italic opacity-80 mt-3 leading-relaxed">{concept.ctr_explanation}</p>
           </div>
+
+          {/* AI Generation Prompt — with copy button */}
           <div className="pt-8 border-t-2 border-[var(--color-accent-pencil)]/10">
-            <span className="text-xs font-label uppercase opacity-60 flex items-center gap-2">
-              <Wand2 className="w-4 h-4" />
-              AI Generation Prompt
-            </span>
-            <p className="text-xs font-mono opacity-80 mt-3 leading-relaxed bg-[var(--color-surface-container)] p-3 neo-border break-words">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-label uppercase opacity-60 flex items-center gap-2">
+                <Wand2 className="w-4 h-4" />
+                AI Generation Prompt
+              </span>
+              <button
+                onClick={copyPrompt}
+                className={`flex items-center gap-1.5 px-2 py-1 text-[10px] font-label uppercase neo-border transition-all ${copied ? 'bg-[var(--color-secondary-yellow)] opacity-100' : 'opacity-40 hover:opacity-100 hover:bg-[var(--color-surface-container)]'}`}
+                title="Copy prompt to clipboard"
+              >
+                <Copy className="w-3 h-3" />
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <p className="text-xs font-mono opacity-80 leading-relaxed bg-[var(--color-surface-container)] p-3 neo-border break-words">
               {concept.image_generation_prompt}
             </p>
           </div>
@@ -369,7 +417,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
         </div>
       </div>
 
-      {/* Bottom Section: AI Chat Refinement */}
+      {/* Bottom: AI Feedback */}
       <div className="p-8 bg-[var(--color-surface-container)] border-t-0">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -393,7 +441,6 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
             exit={{ opacity: 0, height: 0 }}
             className="space-y-4 overflow-hidden"
           >
-            {/* Suggestion chips */}
             <div>
               <p className="text-xs font-label uppercase opacity-60 mb-3">Quick Suggestions</p>
               <div className="flex flex-wrap gap-2">
@@ -409,13 +456,12 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
               </div>
             </div>
 
-            {/* Text input */}
             <div className="flex gap-3 items-end">
               <textarea
                 value={chatInput}
                 onChange={(e) => setChatInputs(prev => ({ ...prev, [concept.concept_number]: e.target.value }))}
                 placeholder="Describe what to change (or click a suggestion above)..."
-                className="flex-1 p-3 bg-white neo-border font-body text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-none min-h-[60px] text-[#1F1F1F] placeholder:text-gray-400"
+                className="flex-1 p-3 bg-white neo-border font-body text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-none min-h-[60px] text-[var(--color-on-surface)] placeholder:text-[var(--color-on-surface)]/30"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -425,7 +471,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
               />
               <button
                 onClick={() => { if (chatInput.trim()) handleRefine(concept); }}
-                disabled={!chatInput.trim() || refiningConcepts[concept.concept_number]}
+                disabled={!chatInput.trim() || isRefining}
                 className="p-3 bg-[var(--color-primary)] text-white neo-border neo-shadow-button hover:bg-[var(--color-primary-dim)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-label text-sm uppercase"
               >
                 <Send className="w-4 h-4" />

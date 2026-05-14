@@ -61,25 +61,24 @@ const SettingsDrawer = ({
           <button onClick={onClose}><X /></button>
         </div>
         <div className="space-y-12">
-          {/* Fine-tuning */}
           <div className="space-y-6">
             <h3 className="text-2xl font-headline text-[var(--color-on-surface)] uppercase tracking-widest">Fine-Tuning</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-label uppercase mb-2">Aspect Ratio</label>
                 <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full p-3 bg-[var(--color-surface)] neo-border">
-                  <option value="16:9">16:9</option>
-                  <option value="9:16">9:16</option>
-                  <option value="1:1">1:1</option>
+                  <option value="16:9">16:9 — YouTube</option>
+                  <option value="9:16">9:16 — Shorts / TikTok</option>
+                  <option value="1:1">1:1 — Square</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-label uppercase mb-2">Resolution</label>
                 <select value={resolution} onChange={(e) => setResolution(e.target.value)} className="w-full p-3 bg-[var(--color-surface)] neo-border">
-                  <option value="512px">512px</option>
-                  <option value="1K">1K</option>
-                  <option value="2K">2K</option>
-                  <option value="4K">4K</option>
+                  <option value="512px">512px — Fast preview</option>
+                  <option value="1K">1K — Standard</option>
+                  <option value="2K">2K — High quality</option>
+                  <option value="4K">4K — Ultra</option>
                 </select>
               </div>
               <div>
@@ -89,10 +88,9 @@ const SettingsDrawer = ({
             </div>
           </div>
 
-          {/* API Key Management */}
           <div className="space-y-6">
             <h3 className="text-2xl font-headline text-[var(--color-on-surface)] uppercase tracking-widest">Account</h3>
-            <button 
+            <button
               onClick={onSelectKey}
               className="w-full p-4 bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)] font-label uppercase neo-border neo-shadow-button hover:bg-[var(--color-primary)] transition-colors flex items-center justify-center gap-2"
             >
@@ -119,6 +117,7 @@ export default function App() {
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [input]);
+
   const [niche, setNiche] = useState(NICHE_EXAMPLES[0].id);
   const [stylePreset, setStylePreset] = useState(STYLE_EXAMPLES[0].id);
   const [includeFace, setIncludeFace] = useState(true);
@@ -138,24 +137,52 @@ export default function App() {
   const [saturation, setSaturation] = useState(100);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Chat Loop State
+  // Chat loop state
   const [chatInputs, setChatInputs] = useState<Record<number, string>>({});
   const [refiningConcepts, setRefiningConcepts] = useState<Record<number, boolean>>({});
   const [showRefinementFor, setShowRefinementFor] = useState<Record<number, boolean>>({});
   const [likedConcepts, setLikedConcepts] = useState<ThumbnailConcept[]>([]);
   const [selectedCompositeReferences, setSelectedCompositeReferences] = useState<Record<number, ThumbnailConcept[]>>({});
   const [mobilePreviewFor, setMobilePreviewFor] = useState<Record<number, boolean>>({});
-  const [imageEdits, setImageEdits] = useState<Record<number, { 
-    brightness: number, 
-    contrast: number, 
+  const [imageEdits, setImageEdits] = useState<Record<number, {
+    brightness: number,
+    contrast: number,
     saturation: number,
     subjectSize: number,
     textPosition: 'top' | 'center' | 'bottom',
     emphasis: 'subject' | 'text' | 'balanced'
   }>>({});
 
+  // UX state
+  const [isGeneratingMore, setIsGeneratingMore] = useState(false);
+  const [showRestoreBar, setShowRestoreBar] = useState(false);
+
+  // ── localStorage: check for saved session on mount ──────────────────────
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('cyt_results')) setShowRestoreBar(true);
+    } catch {}
+  }, []);
+
+  // ── localStorage: auto-save on change ───────────────────────────────────
+  useEffect(() => {
+    if (results) {
+      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+    }
+  }, [results]);
+
+  useEffect(() => {
+    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+  }, [likedConcepts]);
+
+  useEffect(() => {
+    if (input.trim()) {
+      try { localStorage.setItem('cyt_input', input); } catch {}
+    }
+  }, [input]);
+
+  // ── API key check ────────────────────────────────────────────────────────
   const getCTRScore = (concept: ThumbnailConcept) => {
-    // Mocked CTR score based on strategist logic
     let score = 85;
     if (concept.hook.toLowerCase().includes('curiosity')) score += 5;
     if (concept.psychology.toLowerCase().includes('shock')) score += 3;
@@ -169,7 +196,7 @@ export default function App() {
         const selected = await window.aistudio.hasSelectedApiKey();
         setHasKey(selected);
       } else {
-        setHasKey(true); // Fallback if not in AI Studio
+        setHasKey(true);
       }
     };
     checkApiKey();
@@ -178,16 +205,14 @@ export default function App() {
   const handleSelectKey = async () => {
     if (window.aistudio && window.aistudio.openSelectKey) {
       await window.aistudio.openSelectKey();
-      setHasKey(true); // Assume success to mitigate race condition
+      setHasKey(true);
     }
   };
 
   const toggleLike = (concept: ThumbnailConcept) => {
     setLikedConcepts(prev => {
       const exists = prev.find(c => c.concept_name === concept.concept_name);
-      if (exists) {
-        return prev.filter(c => c.concept_name !== concept.concept_name);
-      }
+      if (exists) return prev.filter(c => c.concept_name !== concept.concept_name);
       return [...prev, concept];
     });
   };
@@ -212,7 +237,6 @@ export default function App() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setBase64Image(reader.result as string);
-        // Reset so the same file can be re-selected after clearing
         if (fileInputRef.current) fileInputRef.current.value = '';
       };
       reader.readAsDataURL(file);
@@ -235,32 +259,20 @@ export default function App() {
     try {
       const concepts = await getThumbnailConcepts(effectiveInput, niche, stylePreset, layout, palette, base64Image || undefined, likedConcepts);
       setResults(concepts);
-      
-      let imageErrors: string[] = [];
 
+      const imageErrors: string[] = [];
       const updatedThumbnails = await Promise.all(
         concepts.thumbnails.map(async (concept) => {
           try {
-            const prompt = includeFace 
+            const prompt = includeFace
               ? `${concept.image_generation_prompt}, prominent expressive human face with clear emotion`
               : concept.image_generation_prompt;
             const imageUrl = await generateThumbnailImage(prompt, niche, stylePreset, layout, palette, aspectRatio, resolution, base64Image || undefined, saturation);
             return { ...concept, imageUrl };
           } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            console.error(`Failed to generate image for concept ${concept.concept_number}`, err);
-            
-            if (errorMessage.includes("spending cap") || errorMessage.includes("RESOURCE_EXHAUSTED")) {
-              imageErrors.push(`Concept ${concept.concept_number}: Gemini API Quota Exceeded. Check your Google Cloud billing settings.`);
-            } else {
-              imageErrors.push(`Concept ${concept.concept_number}: ${errorMessage}`);
-            }
-            
-            // If it's a missing entity error, reset key state
-            if (errorMessage.includes('Requested entity was not found')) {
-              setHasKey(false);
-            }
-            
+            const msg = err instanceof Error ? err.message : 'Unknown error';
+            imageErrors.push(`Concept ${concept.concept_number}: ${msg}`);
+            if (msg.includes('Requested entity was not found')) setHasKey(false);
             return concept;
           }
         })
@@ -274,15 +286,63 @@ export default function App() {
       setState('result');
     } catch (err) {
       console.error(err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      if (errorMessage.includes("API key not valid")) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      if (msg.includes("API key not valid")) {
         setError("Invalid API Key. Please check your environment variables.");
-      } else if (errorMessage.includes("spending cap") || errorMessage.includes("RESOURCE_EXHAUSTED")) {
+      } else if (msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED")) {
         setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota. Please check your billing settings at console.cloud.google.com.");
       } else {
-        setError(`Failed to generate concepts: ${errorMessage}`);
+        setError(`Failed to generate concepts: ${msg}`);
       }
       setState('initial');
+    }
+  };
+
+  const handleGenerateMore = async () => {
+    if (!input.trim() || !results) return;
+    setIsGeneratingMore(true);
+    setError(null);
+    try {
+      const more = await getThumbnailConcepts(input, niche, stylePreset, layout, palette, base64Image || undefined, likedConcepts);
+      const offset = results.thumbnails.length;
+      const withImages = await Promise.all(
+        more.thumbnails.map(async (concept, i) => {
+          const newNumber = offset + i + 1;
+          try {
+            const prompt = includeFace
+              ? `${concept.image_generation_prompt}, prominent expressive human face with clear emotion`
+              : concept.image_generation_prompt;
+            const imageUrl = await generateThumbnailImage(prompt, niche, stylePreset, layout, palette, aspectRatio, resolution, base64Image || undefined, saturation);
+            return { ...concept, concept_number: newNumber, imageUrl };
+          } catch {
+            return { ...concept, concept_number: newNumber };
+          }
+        })
+      );
+      setResults(prev => prev ? { ...prev, thumbnails: [...prev.thumbnails, ...withImages] } : prev);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate more concepts');
+    } finally {
+      setIsGeneratingMore(false);
+    }
+  };
+
+  const handleRegenerateImage = async (concept: ThumbnailConcept) => {
+    if (!results) return;
+    setRefiningConcepts(prev => ({ ...prev, [concept.concept_number]: true }));
+    try {
+      const prompt = includeFace
+        ? `${concept.image_generation_prompt}, prominent expressive human face with clear emotion`
+        : concept.image_generation_prompt;
+      const imageUrl = await generateThumbnailImage(prompt, niche, stylePreset, layout, palette, aspectRatio, resolution, base64Image || undefined, saturation);
+      setResults(prev => prev ? {
+        ...prev,
+        thumbnails: prev.thumbnails.map(t => t.concept_number === concept.concept_number ? { ...t, imageUrl } : t)
+      } : prev);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Image regeneration failed');
+    } finally {
+      setRefiningConcepts(prev => ({ ...prev, [concept.concept_number]: false }));
     }
   };
 
@@ -292,11 +352,11 @@ export default function App() {
 
     setRefiningConcepts(prev => ({ ...prev, [concept.concept_number]: true }));
     setError(null);
-    
+
     try {
       const compositeReferences = selectedCompositeReferences[concept.concept_number] || [];
       const refinedConcept = await refineConcept(concept, feedback, compositeReferences, base64Image || undefined);
-      const prompt = includeFace 
+      const prompt = includeFace
         ? `${refinedConcept.image_generation_prompt}, prominent expressive human face with clear emotion`
         : refinedConcept.image_generation_prompt;
       const imageUrl = await generateThumbnailImage(prompt, niche, stylePreset, layout, palette, aspectRatio, resolution, base64Image || undefined, saturation);
@@ -304,27 +364,36 @@ export default function App() {
 
       setResults(prev => {
         if (!prev) return prev;
-        const newThumbnails = prev.thumbnails.map(t => 
-          t.concept_number === concept.concept_number ? updatedConcept : t
-        );
-        return { ...prev, thumbnails: newThumbnails };
+        return { ...prev, thumbnails: prev.thumbnails.map(t => t.concept_number === concept.concept_number ? updatedConcept : t) };
       });
-      
       setChatInputs(prev => ({ ...prev, [concept.concept_number]: '' }));
       setShowRefinementFor(prev => ({ ...prev, [concept.concept_number]: false }));
     } catch (err) {
       console.error('Failed to refine concept', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      if (errorMessage.includes("spending cap") || errorMessage.includes("RESOURCE_EXHAUSTED")) {
-        setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota. Please check your billing settings at console.cloud.google.com.");
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      if (msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED")) {
+        setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota.");
       } else {
-        setError(`Failed to refine Concept ${concept.concept_number}: ${errorMessage}`);
+        setError(`Failed to refine Concept ${concept.concept_number}: ${msg}`);
       }
     } finally {
       setRefiningConcepts(prev => ({ ...prev, [concept.concept_number]: false }));
     }
   };
 
+  const handleNewSession = () => {
+    setState('initial');
+    setResults(null);
+    setError(null);
+    setChatInputs({});
+    setShowRefinementFor({});
+    setImageEdits({});
+    setMobilePreviewFor({});
+    setRefiningConcepts({});
+    try { localStorage.removeItem('cyt_results'); } catch {}
+  };
+
+  // ── Loading screen ───────────────────────────────────────────────────────
   if (hasKey === null) {
     return (
       <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center">
@@ -363,16 +432,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen text-[var(--color-on-surface)] font-body flex flex-col selection:bg-[var(--color-secondary-yellow)] selection:text-[var(--color-on-surface)]">
-      
       <main className="flex-1 flex flex-col relative overflow-y-auto bg-[var(--color-bg)]">
-        
-        
-        {/* Backdrop — click outside drawer to close */}
+
+        {/* Backdrop */}
         {isSettingsOpen && (
-          <div
-            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
-            onClick={() => setIsSettingsOpen(false)}
-          />
+          <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)} />
         )}
 
         <SettingsDrawer
@@ -387,9 +451,60 @@ export default function App() {
           onSelectKey={handleSelectKey}
         />
 
+        {/* Session restore bar */}
+        <AnimatePresence>
+          {showRestoreBar && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-[var(--color-secondary-yellow)]/30 border-b-2 border-[var(--color-accent-pencil)]/10 overflow-hidden"
+            >
+              <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="w-3.5 h-3.5 opacity-50 shrink-0" />
+                  <span className="text-xs font-label uppercase opacity-60">Previous session found</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      try {
+                        const saved = localStorage.getItem('cyt_results');
+                        const savedLiked = localStorage.getItem('cyt_liked');
+                        const savedInput = localStorage.getItem('cyt_input');
+                        if (saved) { setResults(JSON.parse(saved)); setState('result'); }
+                        if (savedLiked) setLikedConcepts(JSON.parse(savedLiked));
+                        if (savedInput) setInput(savedInput);
+                      } catch {}
+                      setShowRestoreBar(false);
+                    }}
+                    className="px-3 py-1 bg-[var(--color-on-surface)] text-[var(--color-bg)] text-[10px] font-label uppercase neo-border hover:opacity-80 transition-opacity"
+                  >
+                    Restore
+                  </button>
+                  <button
+                    onClick={() => {
+                      try {
+                        localStorage.removeItem('cyt_results');
+                        localStorage.removeItem('cyt_liked');
+                        localStorage.removeItem('cyt_input');
+                      } catch {}
+                      setShowRestoreBar(false);
+                    }}
+                    className="p-1 opacity-40 hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Error banner */}
         <AnimatePresence>
           {error && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -397,7 +512,7 @@ export default function App() {
             >
               <div className="max-w-5xl mx-auto px-6 py-4 flex flex-col md:flex-row md:items-center justify-between text-red-400 text-sm gap-4">
                 <div className="flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 shrink-0" /> 
+                  <AlertCircle className="w-5 h-5 shrink-0" />
                   <div className="space-y-1">
                     <p className="font-bold uppercase tracking-wider">API Error Detected</p>
                     <p className="opacity-90">{error}</p>
@@ -406,16 +521,16 @@ export default function App() {
                 <div className="flex flex-wrap items-center gap-3">
                   {(error.includes("spending cap") || error.includes("Quota Exceeded")) && (
                     <div className="flex items-center gap-2">
-                      <a 
-                        href="https://console.cloud.google.com/billing" 
-                        target="_blank" 
+                      <a
+                        href="https://console.cloud.google.com/billing"
+                        target="_blank"
                         rel="noreferrer"
                         className="px-4 py-2 bg-red-500 text-white font-label uppercase text-xs neo-button neo-shadow-button hover:bg-red-600 transition-colors flex items-center gap-2"
                       >
                         <Settings className="w-4 h-4" />
                         Fix Billing
                       </a>
-                      <button 
+                      <button
                         onClick={handleSelectKey}
                         className="px-4 py-2 bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)] font-label uppercase text-xs neo-border neo-shadow-button hover:bg-[var(--color-primary)] transition-colors flex items-center gap-2"
                       >
@@ -424,11 +539,8 @@ export default function App() {
                       </button>
                     </div>
                   )}
-                  <button 
-                    onClick={() => {
-                      if (state === 'initial') handleGenerate();
-                      else setError(null);
-                    }} 
+                  <button
+                    onClick={() => { if (state === 'initial') handleGenerate(); else setError(null); }}
                     className="px-4 py-2 bg-[var(--color-surface)] text-[var(--color-on-surface)] font-label uppercase text-xs neo-border neo-shadow-button hover:bg-[var(--color-surface-container)] transition-colors flex items-center gap-2"
                   >
                     <RefreshCw className="w-4 h-4" />
@@ -443,48 +555,39 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Initial State */}
+        {/* ── INITIAL STATE ─────────────────────────────────────────────── */}
         <AnimatePresence mode="wait">
           {state === 'initial' && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="w-full max-w-5xl mx-auto flex flex-col px-6 py-8 md:py-12 flex-1 justify-center"
+              className="w-full max-w-5xl mx-auto flex flex-col px-6 py-10 md:py-14 flex-1 justify-center gap-5"
             >
-
-              {/* Title */}
-              <div className="max-w-2xl mx-auto w-full mb-12 text-center">
-                <h2 className="text-4xl md:text-6xl font-headline font-bold text-[var(--color-on-surface)] uppercase tracking-tighter leading-none">
-                  Create Your <br />
-                  <span className="text-[var(--color-primary)]">Thumbnail</span>
+              {/* Title — compact, max-w-4xl */}
+              <div className="max-w-4xl mx-auto w-full text-center">
+                <h2 className="text-4xl md:text-5xl font-headline font-bold text-[var(--color-on-surface)] uppercase tracking-tighter leading-none">
+                  Create Your <span className="text-[var(--color-primary)]">Thumbnail</span>
                 </h2>
-                <div className="mt-4 flex items-center justify-center gap-4">
-                  <div className="h-1 flex-1 bg-[var(--color-accent-pencil)]" />
-                  <span className="text-sm font-label font-bold uppercase tracking-widest opacity-60">Expert Strategy Engine</span>
-                  <div className="h-1 flex-1 bg-[var(--color-accent-pencil)]" />
-                </div>
+                <p className="mt-2 text-xs font-label uppercase tracking-widest opacity-40">Expert Strategy Engine</p>
               </div>
 
               {/* Liked References */}
               {likedConcepts.length > 0 && (
-                <div className="max-w-2xl mx-auto w-full mb-6">
+                <div className="max-w-4xl mx-auto w-full">
                   <div className="flex items-center gap-2 mb-3">
-                    <Heart className="w-6 h-6 text-[var(--color-primary)] fill-[var(--color-primary)]" />
-                    <h3 className="text-xl font-headline text-[var(--color-on-surface)] uppercase">Referenced Concepts</h3>
+                    <Heart className="w-4 h-4 text-[var(--color-primary)] fill-[var(--color-primary)]" />
+                    <h3 className="text-sm font-headline text-[var(--color-on-surface)] uppercase tracking-widest opacity-70">Referenced Concepts</h3>
                   </div>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-2">
                     {likedConcepts.map(concept => (
-                      <div key={concept.concept_name} className="flex items-center gap-3 bg-[var(--color-surface)] neo-border p-2 pr-4 neo-shadow-button">
+                      <div key={concept.concept_name} className="flex items-center gap-2 bg-[var(--color-surface)] neo-border p-1.5 pr-3 neo-shadow-button">
                         {concept.imageUrl && (
-                          <img src={concept.imageUrl} alt={concept.concept_name} className="w-16 h-10 object-cover border-r-2 border-[var(--color-accent-pencil)]" referrerPolicy="no-referrer" />
+                          <img src={concept.imageUrl} alt={concept.concept_name} className="w-12 h-8 object-cover border-r-2 border-[var(--color-accent-pencil)]" referrerPolicy="no-referrer" />
                         )}
-                        <span className="text-lg font-label text-[var(--color-on-surface)]">{concept.concept_name}</span>
-                        <button 
-                          onClick={() => toggleLike(concept)}
-                          className="text-[var(--color-on-surface)] hover:text-[var(--color-primary)] transition-colors ml-2"
-                        >
-                          <X className="w-5 h-5" />
+                        <span className="text-xs font-label text-[var(--color-on-surface)] uppercase">{concept.concept_name}</span>
+                        <button onClick={() => toggleLike(concept)} className="text-[var(--color-on-surface)] hover:text-[var(--color-primary)] transition-colors">
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ))}
@@ -492,33 +595,29 @@ export default function App() {
                 </div>
               )}
 
-              {/* Main Chat Input Box */}
-              <div className="neo-composer max-w-2xl mx-auto w-full flex flex-col group mb-6 overflow-hidden p-4">
-                {/* Layer A: File Pills */}
+              {/* ── CHATBOX — widened to max-w-4xl ── */}
+              <div className="neo-composer max-w-4xl mx-auto w-full flex flex-col group overflow-hidden p-4">
+                {/* File pill */}
                 {selectedImage && (
                   <div className="flex flex-wrap gap-2 mb-3">
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-[rgba(0,0,0,0.1)] shadow-sm"
                     >
                       <ImageIcon className="w-4 h-4 text-gray-500" />
                       <span className="text-sm text-gray-700 truncate max-w-[120px]">ref_img.jpg</span>
-                      <button
-                        onClick={() => { setSelectedImage(null); setBase64Image(null); }}
-                        className="text-gray-400 hover:text-gray-600"
-                        title="Delete"
-                      >
+                      <button onClick={() => { setSelectedImage(null); setBase64Image(null); }} className="text-gray-400 hover:text-gray-600" title="Delete">
                         <X className="w-4 h-4" />
                       </button>
                     </motion.div>
                   </div>
                 )}
 
-                {/* Settings Panels */}
+                {/* Settings panels */}
                 <AnimatePresence>
                   {layoutMode && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -527,22 +626,14 @@ export default function App() {
                       <div className="flex justify-between items-center">
                         <span className="font-bold">Select Layout</span>
                         <div className="flex gap-2">
-                          {layout !== 'Default' && (
-                            <button onClick={() => setLayout('Default')} className="text-xs text-gray-500 hover:text-black">Reset</button>
-                          )}
-                          <button onClick={() => setLayoutMode(false)} className="text-gray-500 hover:text-black"><X className="w-4 h-4"/></button>
+                          {layout !== 'Default' && <button onClick={() => setLayout('Default')} className="text-xs text-gray-500 hover:text-black">Reset</button>}
+                          <button onClick={() => setLayoutMode(false)} className="text-gray-500 hover:text-black"><X className="w-4 h-4" /></button>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {['Default', 'Split Screen', 'Centered Subject', 'Grid'].map(l => (
-                          <button 
-                            key={l}
-                            onClick={() => {
-                              setLayout(l);
-                              setLayoutMode(false);
-                            }}
-                            className={`px-3 py-1 rounded-full text-xs ${layout === l ? 'bg-black text-white' : 'bg-white border border-gray-300'}`}
-                          >
+                          <button key={l} onClick={() => { setLayout(l); setLayoutMode(false); }}
+                            className={`px-3 py-1 rounded-full text-xs ${layout === l ? 'bg-black text-white' : 'bg-white border border-gray-300'}`}>
                             {l}
                           </button>
                         ))}
@@ -550,7 +641,7 @@ export default function App() {
                     </motion.div>
                   )}
                   {paletteMode && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -559,22 +650,14 @@ export default function App() {
                       <div className="flex justify-between items-center">
                         <span className="font-bold">Select Palette</span>
                         <div className="flex gap-2">
-                          {palette !== 'Vibrant' && (
-                            <button onClick={() => setPalette('Vibrant')} className="text-xs text-gray-500 hover:text-black">Reset</button>
-                          )}
-                          <button onClick={() => setPaletteMode(false)} className="text-gray-500 hover:text-black"><X className="w-4 h-4"/></button>
+                          {palette !== 'Vibrant' && <button onClick={() => setPalette('Vibrant')} className="text-xs text-gray-500 hover:text-black">Reset</button>}
+                          <button onClick={() => setPaletteMode(false)} className="text-gray-500 hover:text-black"><X className="w-4 h-4" /></button>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {['Vibrant', 'Minimalist', 'Dark Mode', 'High Contrast'].map(p => (
-                          <button 
-                            key={p}
-                            onClick={() => {
-                              setPalette(p);
-                              setPaletteMode(false);
-                            }}
-                            className={`px-3 py-1 rounded-full text-xs ${palette === p ? 'bg-black text-white' : 'bg-white border border-gray-300'}`}
-                          >
+                          <button key={p} onClick={() => { setPalette(p); setPaletteMode(false); }}
+                            className={`px-3 py-1 rounded-full text-xs ${palette === p ? 'bg-black text-white' : 'bg-white border border-gray-300'}`}>
                             {p}
                           </button>
                         ))}
@@ -583,28 +666,20 @@ export default function App() {
                   )}
                 </AnimatePresence>
 
-                {/* Subject Upload Preview in Chatbox */}
+                {/* Subject preview */}
                 <AnimatePresence>
                   {selectedImage && (
-                    <motion.div 
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: 'auto' }}
-                      exit={{ opacity: 0, width: 0 }}
-                      className="mr-3 relative"
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mb-3 relative w-fit"
                     >
                       <div className="w-12 h-12 neo-border overflow-hidden bg-white neo-shadow-button">
-                        <img 
-                          src={selectedImage} 
-                          alt="Subject Reference" 
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
+                        <img src={selectedImage} alt="Subject Reference" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
-                      <button 
-                        onClick={() => {
-                          setSelectedImage(null);
-                          setBase64Image(null);
-                        }}
+                      <button
+                        onClick={() => { setSelectedImage(null); setBase64Image(null); }}
                         className="absolute -top-2 -right-2 bg-red-500 text-white p-0.5 neo-border hover:bg-red-600 transition-colors"
                       >
                         <X className="w-3 h-3" />
@@ -613,14 +688,14 @@ export default function App() {
                   )}
                 </AnimatePresence>
 
-                {/* Layer B: Text Area */}
-                <textarea 
+                {/* Textarea */}
+                <textarea
                   ref={textareaRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Describe your video concept..."
-                  className="w-full bg-transparent text-[#1F1F1F] p-2 font-body text-lg focus:outline-none min-h-[48px] resize-none placeholder:text-gray-400 leading-relaxed transition-all duration-200 ease-in-out overflow-hidden"
-                  disabled={false}
+                  maxLength={2000}
+                  className="w-full bg-transparent text-[var(--color-on-surface)] p-2 font-body text-lg focus:outline-none min-h-[48px] resize-none placeholder:text-[var(--color-on-surface)]/30 leading-relaxed transition-all duration-200 ease-in-out overflow-hidden"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -628,27 +703,26 @@ export default function App() {
                     }
                   }}
                 />
-                
-                {/* Layer C: Tool Row */}
-                <div className="flex items-center justify-between w-full pt-4 mt-2 border-t border-[rgba(0,0,0,0.05)]">
-                  <div className="flex items-center gap-2">
-                    {/* Attachment Button */}
-                    <button 
+
+                {/* Character counter */}
+                <div className="flex justify-end pr-1 -mt-1 mb-1">
+                  <span className={`text-[10px] font-mono transition-colors ${input.length > 1800 ? 'text-red-500 font-bold' : 'opacity-20'}`}>
+                    {input.length}/2000
+                  </span>
+                </div>
+
+                {/* Tool row */}
+                <div className="flex items-center justify-between w-full pt-3 border-t border-[rgba(0,0,0,0.05)]">
+                  <div className="flex items-center gap-1">
+                    <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className={`p-2 transition-colors flex items-center justify-center rounded-lg ${selectedImage ? 'bg-[var(--color-secondary-yellow)] text-black' : 'hover:bg-gray-200 text-gray-600'}`}
                       title="Upload Subject/Character"
                     >
                       <ImageIcon className="w-5 h-5" />
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        accept="image/*" 
-                        onChange={handleFileChange}
-                      />
+                      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                     </button>
-                    {/* Clear Button */}
                     <button
                       type="button"
                       onClick={() => {
@@ -665,19 +739,14 @@ export default function App() {
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
-                    {/* Layout/Add Icon */}
                     <button
-                      onClick={() => {
-                        setLayoutMode(!layoutMode);
-                        setPaletteMode(false);
-                      }}
+                      onClick={() => { setLayoutMode(!layoutMode); setPaletteMode(false); }}
                       className={`relative p-2 transition-colors flex items-center justify-center rounded-lg ${layoutMode ? 'bg-gray-300 text-black' : 'hover:bg-gray-200 text-gray-600'}`}
                       title="Toggle Layout Mode"
                     >
                       <LayoutTemplate className="w-5 h-5" />
                       {layout !== 'Default' && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-black rounded-full" />}
                     </button>
-                    {/* Include Face Toggle */}
                     <button
                       onClick={() => setIncludeFace(!includeFace)}
                       className={`p-2 transition-colors flex items-center justify-center rounded-lg ${!includeFace ? 'bg-[var(--color-secondary-yellow)] text-black' : 'hover:bg-gray-200 text-gray-600'}`}
@@ -687,150 +756,123 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    {/* Settings Toggle */}
-                    <button 
+                  <div className="flex items-center gap-2">
+                    <button
                       onClick={() => setIsSettingsOpen(true)}
                       className="p-2 hover:bg-gray-200 text-gray-600 transition-colors flex items-center justify-center rounded-lg"
                       title="Settings"
                     >
                       <Settings className="w-5 h-5" />
                     </button>
-                    {/* Palette Icon */}
-                    <button 
-                      onClick={() => {
-                        setPaletteMode(!paletteMode);
-                        setLayoutMode(false);
-                      }}
+                    <button
+                      onClick={() => { setPaletteMode(!paletteMode); setLayoutMode(false); }}
                       className={`relative p-2 transition-colors flex items-center justify-center rounded-lg ${paletteMode ? 'bg-gray-300 text-black' : 'hover:bg-gray-200 text-gray-600'}`}
                       title="Toggle Palette Mode"
                     >
                       <Palette className="w-5 h-5" />
                       {palette !== 'Vibrant' && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-black rounded-full" />}
                     </button>
-
-                    {/* Submit Button */}
-                    <button 
+                    <button
                       onClick={handleGenerate}
                       disabled={!input.trim()}
-                      className="bg-[#1F1F1F] text-white px-5 py-2 font-label text-sm hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 rounded-full"
+                      className="bg-[var(--color-on-surface)] text-[var(--color-bg)] px-5 py-2 font-label text-sm hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 rounded-full"
                     >
-                      <span>Execute ◁</span>
+                      Execute ◁
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Quick Start Chips */}
-              <div className="mb-12 flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
-                {[
-                  { label: "MrBeast Style", prompt: "I gave $10,000 to a random stranger on the street", icon: Zap },
-                  { label: "Before/After", prompt: "I transformed my body in 30 days with no gym or diet", icon: RefreshCw },
-                  { label: "Curiosity Gap", prompt: "The one morning habit that changed my entire life", icon: Eye },
-                  { label: "High Stakes", prompt: "I quit my 9-5 job and started a business with only $100", icon: Target },
-                  { label: "Luxury vs Budget", prompt: "$10 vs $10,000 vacation — which one was actually better?", icon: TrendingUp }
-                ].map((chip, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => { setInput(chip.prompt); handleGenerate(undefined, chip.prompt); }}
-                    className="px-3 py-1.5 bg-[var(--color-surface)] neo-border neo-shadow-button hover:bg-[var(--color-secondary-yellow)] transition-all duration-300 flex items-center gap-2 font-label text-[10px] uppercase tracking-wider group"
-                    title={chip.prompt}
-                  >
-                    <chip.icon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                    {chip.label}
-                  </button>
-                ))}
+              {/* Quick Start Chips — below chatbox */}
+              <div className="max-w-4xl mx-auto w-full">
+                <p className="text-[10px] font-label uppercase opacity-30 mb-2 tracking-widest">Quick Start</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: "MrBeast Style", prompt: "I gave $10,000 to a random stranger on the street", icon: Zap },
+                    { label: "Before/After", prompt: "I transformed my body in 30 days with no gym or diet", icon: RefreshCw },
+                    { label: "Curiosity Gap", prompt: "The one morning habit that changed my entire life", icon: Eye },
+                    { label: "High Stakes", prompt: "I quit my 9-5 job and started a business with only $100", icon: Target },
+                    { label: "Luxury vs Budget", prompt: "$10 vs $10,000 vacation — which one was actually better?", icon: TrendingUp }
+                  ].map((chip, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => { setInput(chip.prompt); handleGenerate(undefined, chip.prompt); }}
+                      className="px-3 py-1.5 bg-[var(--color-surface)] neo-border neo-shadow-button hover:bg-[var(--color-secondary-yellow)] transition-all duration-200 flex items-center gap-1.5 font-label text-[10px] uppercase tracking-wider group"
+                      title={chip.prompt}
+                    >
+                      <chip.icon className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Symmetric Example Grids */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto w-full pb-20 pt-12 border-t-4 border-[var(--color-accent-pencil)]/10">
-                {/* Niche Grid */}
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 pb-4">
-                    <h3 className="text-2xl font-headline text-[var(--color-on-surface)] uppercase tracking-widest">Target Niche</h3>
-                  </div>
-                  <div className="header-divider" />
-                  <div className="grid grid-cols-2 gap-4">
-                    {NICHE_EXAMPLES.map(n => {
-                      const Icon = n.icon;
-                      const isSelected = niche === n.id;
-                      return (
-                        <button
-                          key={n.id}
-                          onClick={() => setNiche(n.id)}
-                          className={`p-6 text-left transition-all duration-200 flex flex-col items-start gap-4 neo-card neo-shadow-button ${
-                            isSelected 
-                              ? 'bg-[var(--color-secondary-blue)] text-white' 
-                              : 'bg-[var(--color-surface)] text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)]'
-                          }`}
-                        >
-                          <div className={`mt-1 ${isSelected ? 'text-white' : 'text-[var(--color-on-surface)]'}`}>
-                            <Icon className="w-8 h-8" />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="font-headline text-xl font-bold uppercase">{n.title}</span>
-                            <span className="text-sm font-body mt-1 opacity-70">{n.example}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+              {/* ── Config strips — niche + style as compact chips ── */}
+              <div className="max-w-4xl mx-auto w-full space-y-2 pt-4 border-t-2 border-[var(--color-accent-pencil)]/10">
+                {/* Niche strip */}
+                <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-0.5">
+                  <span className="text-[10px] font-label uppercase opacity-40 shrink-0 w-8 tracking-widest">Niche</span>
+                  {NICHE_EXAMPLES.map(n => {
+                    const Icon = n.icon;
+                    return (
+                      <button
+                        key={n.id}
+                        onClick={() => setNiche(n.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase shrink-0 neo-border transition-all duration-200 ${
+                          niche === n.id
+                            ? 'bg-[var(--color-secondary-blue)] text-white'
+                            : 'bg-[var(--color-surface)] text-[var(--color-on-surface)] hover:bg-[var(--color-secondary-yellow)]'
+                        }`}
+                      >
+                        <Icon className="w-3 h-3" />
+                        {n.title}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* Style Grid */}
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 pb-4">
-                    <h3 className="text-2xl font-headline text-[var(--color-on-surface)] uppercase tracking-widest">Style Preset</h3>
-                  </div>
-                  <div className="header-divider" />
-                  <div className="grid grid-cols-1 gap-4">
-                    {STYLE_EXAMPLES.map(s => {
-                      const Icon = s.icon;
-                      const isSelected = stylePreset === s.id;
-                      return (
-                        <button
-                          key={s.id}
-                          onClick={() => setStylePreset(s.id)}
-                          className={`p-6 text-left transition-all duration-200 flex items-center gap-4 neo-card neo-shadow-button ${
-                            isSelected 
-                              ? 'bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)]' 
-                              : 'bg-[var(--color-surface)] text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)]'
-                          }`}
-                        >
-                          <div className={`mt-1 ${isSelected ? 'text-[var(--color-on-surface)]' : 'text-[var(--color-on-surface)]'}`}>
-                            <Icon className="w-8 h-8" />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="font-headline text-xl font-bold uppercase">{s.title}</span>
-                            <span className="text-lg font-body mt-1">{s.example}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Style strip */}
+                <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-0.5">
+                  <span className="text-[10px] font-label uppercase opacity-40 shrink-0 w-8 tracking-widest">Style</span>
+                  {STYLE_EXAMPLES.map(s => {
+                    const Icon = s.icon;
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => setStylePreset(s.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase shrink-0 neo-border transition-all duration-200 ${
+                          stylePreset === s.id
+                            ? 'bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)]'
+                            : 'bg-[var(--color-surface)] text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)]'
+                        }`}
+                      >
+                        <Icon className="w-3 h-3" />
+                        {s.title}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Generating State */}
+        {/* ── GENERATING STATE ───────────────────────────────────────────── */}
         <AnimatePresence>
           {state === 'generating' && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto w-full mt-20 px-6"
             >
               <div className="w-full bg-[var(--color-surface)] neo-border neo-shadow-card p-10 relative overflow-hidden">
-                {/* Quirky Background Elements */}
-                <motion.div 
+                <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                   className="absolute -top-20 -right-20 w-64 h-64 border-4 border-dashed border-[var(--color-accent-pencil)] opacity-10 rounded-full"
                 />
-                <motion.div 
+                <motion.div
                   animate={{ y: [0, -20, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                   className="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--color-secondary-yellow)] opacity-10 rounded-full"
@@ -857,18 +899,13 @@ export default function App() {
                     const StepIcon = step.icon;
                     const isActive = idx === loadingStepIndex;
                     const isCompleted = idx < loadingStepIndex;
-                    
                     return (
-                      <motion.div 
-                        key={idx} 
+                      <motion.div
+                        key={idx}
                         initial={{ opacity: 0, x: -20 }}
-                        animate={{ 
-                          opacity: idx <= loadingStepIndex ? 1 : 0.2,
-                          x: 0,
-                          scale: isActive ? 1.05 : 1
-                        }}
+                        animate={{ opacity: idx <= loadingStepIndex ? 1 : 0.2, x: 0, scale: isActive ? 1.05 : 1 }}
                         className={`flex items-center gap-5 p-4 neo-border transition-all duration-300 ${
-                          isActive ? 'bg-[var(--color-secondary-yellow)] neo-shadow-button' : 
+                          isActive ? 'bg-[var(--color-secondary-yellow)] neo-shadow-button' :
                           isCompleted ? 'bg-[var(--color-surface-container)] opacity-60' : 'bg-transparent'
                         }`}
                       >
@@ -881,10 +918,7 @@ export default function App() {
                           {step.text}
                         </span>
                         {isActive && (
-                          <motion.div 
-                            layoutId="active-indicator"
-                            className="ml-auto"
-                          >
+                          <motion.div layoutId="active-indicator" className="ml-auto">
                             <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
                           </motion.div>
                         )}
@@ -893,9 +927,8 @@ export default function App() {
                   })}
                 </div>
 
-                {/* Progress Bar */}
                 <div className="mt-12 h-4 w-full bg-[var(--color-surface-container)] neo-border overflow-hidden">
-                  <motion.div 
+                  <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${((loadingStepIndex + 1) / COGNITIVE_STEPS.length) * 100}%` }}
                     className="h-full bg-[var(--color-primary)]"
@@ -906,37 +939,40 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Result State */}
+        {/* ── RESULT STATE ───────────────────────────────────────────────── */}
         <AnimatePresence>
           {state === 'result' && results && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="max-w-5xl mx-auto w-full px-6 py-12 space-y-12"
             >
               {/* Header */}
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
-                <div className="space-y-4">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                <div className="space-y-3 flex-1 min-w-0">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-[var(--color-primary)] flex items-center justify-center neo-border neo-shadow-button">
-                      <Sparkles className="w-6 h-6 text-[var(--color-on-primary)]" />
+                    <div className="w-10 h-10 bg-[var(--color-primary)] flex items-center justify-center neo-border neo-shadow-button shrink-0">
+                      <Sparkles className="w-5 h-5 text-[var(--color-on-primary)]" />
                     </div>
-                    <h3 className="text-3xl md:text-5xl font-headline font-bold text-[var(--color-on-surface)] leading-tight">
+                    <h3 className="text-2xl md:text-4xl font-headline font-bold text-[var(--color-on-surface)] leading-tight">
                       {results.video_context_summary}
                     </h3>
                   </div>
-                  <p className="text-2xl text-[var(--color-on-surface)] leading-relaxed max-w-3xl font-body">"{input}"</p>
+                  <p className="text-lg text-[var(--color-on-surface)]/60 font-body pl-1">"{input}"</p>
                 </div>
-                
-                <div className="flex flex-col gap-4 bg-[var(--color-surface)] neo-border neo-shadow-card p-6 min-w-[240px]">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-label text-[var(--color-on-surface)] uppercase opacity-60">Niche</span>
-                    <span className="text-sm font-label font-bold text-[var(--color-on-primary)] bg-[var(--color-secondary-blue)] neo-border px-3 py-1 uppercase inline-block w-fit">{results.niche_applied}</span>
+
+                <div className="flex flex-col gap-3 shrink-0 items-start md:items-end">
+                  <div className="flex gap-2 flex-wrap">
+                    <span className="text-xs font-label bg-[var(--color-secondary-blue)] text-white px-3 py-1.5 neo-border uppercase">{results.niche_applied}</span>
+                    <span className="text-xs font-label bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)] px-3 py-1.5 neo-border uppercase">{results.style_preset_applied}</span>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-label text-[var(--color-on-surface)] uppercase opacity-60">Style Preset</span>
-                    <span className="text-sm font-label font-bold text-[var(--color-on-surface)] bg-[var(--color-secondary-yellow)] neo-border px-3 py-1 uppercase inline-block w-fit">{results.style_preset_applied}</span>
-                  </div>
+                  <button
+                    onClick={handleNewSession}
+                    className="flex items-center gap-2 px-4 py-2 bg-[var(--color-surface)] neo-border neo-shadow-button font-label text-xs uppercase hover:bg-[var(--color-secondary-yellow)] transition-all"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    New Session
+                  </button>
                 </div>
               </div>
 
@@ -954,6 +990,7 @@ export default function App() {
                     refiningConcepts={refiningConcepts}
                     getCTRScore={getCTRScore}
                     handleRefine={handleRefine}
+                    handleRegenerateImage={handleRegenerateImage}
                     setResults={setResults}
                     toggleLike={toggleLike}
                     likedConcepts={likedConcepts}
@@ -965,9 +1002,24 @@ export default function App() {
                 ))}
               </div>
 
-              {/* System Advice Footer */}
-              <div className="pt-12 pb-24 border-t-4 border-[var(--color-accent-pencil)]">
-                <div className="bg-[var(--color-surface)] neo-border neo-shadow-card p-10 flex flex-col md:flex-row items-center gap-8 relative">
+              {/* Generate More */}
+              <div className="text-center py-4 border-t-2 border-[var(--color-accent-pencil)]/10">
+                <button
+                  onClick={handleGenerateMore}
+                  disabled={isGeneratingMore}
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-[var(--color-surface)] neo-border neo-shadow-card font-label uppercase text-sm hover:bg-[var(--color-secondary-yellow)] transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                >
+                  {isGeneratingMore ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Generating More Concepts...</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" /> Generate 3 More Concepts</>
+                  )}
+                </button>
+              </div>
+
+              {/* System Diagnostics Footer */}
+              <div className="pb-16 border-t-4 border-[var(--color-accent-pencil)]">
+                <div className="bg-[var(--color-surface)] neo-border neo-shadow-card p-10 flex flex-col md:flex-row items-center gap-8 relative mt-12">
                   <div className="w-20 h-20 bg-[var(--color-secondary-blue)] neo-border flex items-center justify-center shrink-0 neo-shadow-button">
                     <Terminal className="w-10 h-10 text-[var(--color-on-primary)]" />
                   </div>
@@ -985,4 +1037,3 @@ export default function App() {
     </div>
   );
 }
-
