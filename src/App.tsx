@@ -578,8 +578,11 @@ export default function App() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="w-full max-w-5xl mx-auto flex flex-col px-6 py-10 md:py-14 flex-1 justify-center gap-5"
+              className="w-full flex flex-col"
             >
+              {/* ── Hero: centered chatbox section ── */}
+              <div className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-5xl mx-auto w-full gap-5">
+
               {/* Title — compact, max-w-4xl */}
               <div className="max-w-4xl mx-auto w-full text-center">
                 <h2 className="text-4xl md:text-5xl font-headline font-bold text-[var(--color-on-surface)] uppercase tracking-tighter leading-none">
@@ -829,7 +832,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ── Niche + Style — large cards ── */}
+              </div>{/* end hero */}
+
+              {/* ── Niche + Style — large cards, below the fold ── */}
+              <div className="px-6 pb-20 max-w-5xl mx-auto w-full">
               <div className="max-w-4xl mx-auto w-full pt-8 border-t-4 border-[var(--color-accent-pencil)]/10">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
 
@@ -893,6 +899,7 @@ export default function App() {
 
                 </div>
               </div>
+              </div>{/* end config */}
             </motion.div>
           )}
         </AnimatePresence>
