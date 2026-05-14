@@ -509,7 +509,7 @@ export default function App() {
               exit={{ opacity: 0, height: 0 }}
               className="bg-[var(--color-secondary-yellow)]/30 border-b-2 border-[var(--color-accent-pencil)]/10 overflow-hidden"
             >
-              <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+              <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
                   <RefreshCw className="w-3.5 h-3.5 opacity-50 shrink-0" />
                   <span className="text-xs font-label uppercase opacity-60">Previous session found</span>
@@ -559,7 +559,7 @@ export default function App() {
               exit={{ opacity: 0, height: 0 }}
               className="bg-red-500/10 border-b border-red-500/20"
             >
-              <div className="max-w-5xl mx-auto px-6 py-4 flex flex-col md:flex-row md:items-center justify-between text-red-400 text-sm gap-4">
+              <div className="max-w-4xl mx-auto px-6 py-4 flex flex-col md:flex-row md:items-center justify-between text-red-400 text-sm gap-4">
                 <div className="flex items-center gap-3">
                   <AlertCircle className="w-5 h-5 shrink-0" />
                   <div className="space-y-1">
@@ -614,10 +614,10 @@ export default function App() {
               className="w-full flex flex-col"
             >
               {/* ── Hero: centered chatbox section ── */}
-              <div className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-5xl mx-auto w-full gap-5">
+              <div className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-4xl mx-auto w-full gap-5">
 
-              {/* Title — compact, max-w-4xl */}
-              <div className="max-w-4xl mx-auto w-full text-center">
+              {/* Title */}
+              <div className="w-full text-center">
                 <h2 className="text-4xl md:text-5xl font-headline font-bold text-[var(--color-on-surface)] uppercase tracking-tighter leading-none">
                   Create Your <span className="text-[var(--color-primary)]">Thumbnail</span>
                 </h2>
@@ -626,7 +626,7 @@ export default function App() {
 
               {/* Liked References */}
               {likedConcepts.length > 0 && (
-                <div className="max-w-4xl mx-auto w-full">
+                <div className="w-full">
                   <div className="flex items-center gap-2 mb-3">
                     <Heart className="w-4 h-4 text-[var(--color-primary)] fill-[var(--color-primary)]" />
                     <h3 className="text-sm font-headline text-[var(--color-on-surface)] uppercase tracking-widest opacity-70">Referenced Concepts</h3>
@@ -647,8 +647,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* ── CHATBOX — widened to max-w-4xl ── */}
-              <div className="neo-composer max-w-4xl mx-auto w-full flex flex-col group overflow-hidden p-4">
+              {/* ── CHATBOX ── */}
+              <div className="neo-composer w-full flex flex-col group overflow-hidden p-4">
                 {/* File pill */}
                 {selectedImage && (
                   <div className="flex flex-wrap gap-2 mb-3">
@@ -842,7 +842,7 @@ export default function App() {
               </div>
 
               {/* Quick Start Chips — each auto-configures niche/style/palette/layout */}
-              <div className="max-w-4xl mx-auto w-full">
+              <div className="w-full">
                 <p className="text-[10px] font-label uppercase opacity-30 mb-2 tracking-widest">Quick Start</p>
                 <div className="flex flex-wrap gap-2">
                   {QUICK_STARTS.map((chip, idx) => (
@@ -869,8 +869,8 @@ export default function App() {
               </div>{/* end hero */}
 
               {/* ── Niche + Style — large cards, below the fold ── */}
-              <div className="px-6 pb-20 max-w-5xl mx-auto w-full">
-              <div className="max-w-4xl mx-auto w-full pt-8 border-t-4 border-[var(--color-accent-pencil)]/10">
+              <div className="px-6 pb-20 max-w-4xl mx-auto w-full">
+              <div className="w-full pt-8 border-t-4 border-[var(--color-accent-pencil)]/10">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
 
                   {/* Niche */}
@@ -1026,7 +1026,7 @@ export default function App() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="max-w-5xl mx-auto w-full px-6 py-12 space-y-12"
+              className="max-w-4xl mx-auto w-full px-6 py-12 space-y-12"
             >
               {/* Header */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
