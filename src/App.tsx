@@ -866,8 +866,11 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ── Niche + Style — large cards ── */}
-              <div className="w-full pt-6 border-t-4 border-[var(--color-accent-pencil)]/10 pb-20">
+              </div>{/* end hero: chatbox centered */}
+
+              {/* ── Niche + Style — directly below hero ── */}
+              <div className="px-6 pb-20 max-w-4xl mx-auto w-full">
+              <div className="w-full pt-6 border-t-4 border-[var(--color-accent-pencil)]/10">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
 
                   {/* Niche */}
@@ -930,7 +933,7 @@ export default function App() {
 
                 </div>
               </div>
-              </div>{/* end outer container */}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
