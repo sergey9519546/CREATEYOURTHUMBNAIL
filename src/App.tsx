@@ -824,68 +824,72 @@ export default function App() {
               </div>
 
               {/* ── Config: Niche + Style ── */}
-              <div className="max-w-4xl mx-auto w-full pt-5 border-t-2 border-[var(--color-accent-pencil)]/10 space-y-5">
+              <div className="max-w-4xl mx-auto w-full">
+                <div className="bg-[var(--color-surface)] neo-border p-5 space-y-5">
 
-                {/* Niche */}
-                <div>
-                  <div className="flex items-center gap-3 mb-2.5">
-                    <div className="w-1 h-4 bg-[var(--color-secondary-blue)] shrink-0" />
-                    <span className="text-[10px] font-label uppercase tracking-widest opacity-40">Niche</span>
-                    <span className="text-[10px] font-label uppercase font-bold text-[var(--color-secondary-blue)]">{niche}</span>
+                  {/* Niche */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] font-label font-bold uppercase tracking-widest text-[var(--color-secondary-blue)]">Niche</span>
+                      <div className="flex-1 h-px bg-[var(--color-secondary-blue)]/15" />
+                      <span className="text-[10px] font-label uppercase opacity-35 tracking-wider">{niche}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {NICHE_EXAMPLES.map(n => {
+                        const Icon = n.icon;
+                        const active = niche === n.id;
+                        return (
+                          <button
+                            key={n.id}
+                            onClick={() => setNiche(n.id)}
+                            title={n.example}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase transition-all duration-150 border-2 ${
+                              active
+                                ? 'border-[var(--color-secondary-blue)] bg-[var(--color-secondary-blue)] text-white shadow-sm'
+                                : 'border-black/10 bg-transparent text-[var(--color-on-surface)]/40 hover:border-black/25 hover:text-[var(--color-on-surface)]/80 hover:bg-[var(--color-surface-variant)]'
+                            }`}
+                          >
+                            <Icon className="w-3 h-3 shrink-0" />
+                            {n.title}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {NICHE_EXAMPLES.map(n => {
-                      const Icon = n.icon;
-                      const active = niche === n.id;
-                      return (
-                        <button
-                          key={n.id}
-                          onClick={() => setNiche(n.id)}
-                          title={n.example}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase neo-border transition-all duration-150 ${
-                            active
-                              ? 'bg-[var(--color-secondary-blue)] text-white neo-shadow-button'
-                              : 'bg-[var(--color-surface)] text-[var(--color-on-surface)]/50 hover:text-[var(--color-on-surface)] hover:bg-[var(--color-surface-variant)]'
-                          }`}
-                        >
-                          <Icon className="w-3 h-3 shrink-0" />
-                          {n.title}
-                        </button>
-                      );
-                    })}
+
+                  <div className="h-px bg-black/5" />
+
+                  {/* Style */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] font-label font-bold uppercase tracking-widest text-[var(--color-on-surface)]/50">Style</span>
+                      <div className="flex-1 h-px bg-black/8" />
+                      <span className="text-[10px] font-label uppercase opacity-35 tracking-wider">{stylePreset}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {STYLE_EXAMPLES.map(s => {
+                        const Icon = s.icon;
+                        const active = stylePreset === s.id;
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => setStylePreset(s.id)}
+                            title={s.example}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase transition-all duration-150 border-2 ${
+                              active
+                                ? 'border-[var(--color-accent-pencil)] bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)] shadow-sm'
+                                : 'border-black/10 bg-transparent text-[var(--color-on-surface)]/40 hover:border-black/25 hover:text-[var(--color-on-surface)]/80 hover:bg-[var(--color-surface-variant)]'
+                            }`}
+                          >
+                            <Icon className="w-3 h-3 shrink-0" />
+                            {s.title}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
+
                 </div>
-
-                {/* Style */}
-                <div>
-                  <div className="flex items-center gap-3 mb-2.5">
-                    <div className="w-1 h-4 bg-[var(--color-secondary-yellow)] shrink-0" />
-                    <span className="text-[10px] font-label uppercase tracking-widest opacity-40">Style</span>
-                    <span className="text-[10px] font-label uppercase font-bold opacity-60">{stylePreset}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {STYLE_EXAMPLES.map(s => {
-                      const Icon = s.icon;
-                      const active = stylePreset === s.id;
-                      return (
-                        <button
-                          key={s.id}
-                          onClick={() => setStylePreset(s.id)}
-                          title={s.example}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase neo-border transition-all duration-150 ${
-                            active
-                              ? 'bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)] neo-shadow-button'
-                              : 'bg-[var(--color-surface)] text-[var(--color-on-surface)]/50 hover:text-[var(--color-on-surface)] hover:bg-[var(--color-surface-variant)]'
-                          }`}
-                        >
-                          <Icon className="w-3 h-3 shrink-0" />
-                          {s.title}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
               </div>
             </motion.div>
           )}
