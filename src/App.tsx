@@ -829,18 +829,15 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ── Config: Niche + Style ── */}
-              <div className="max-w-4xl mx-auto w-full">
-                <div className="bg-[var(--color-surface)] neo-border p-5 space-y-5">
+              {/* ── Niche + Style — large cards ── */}
+              <div className="max-w-4xl mx-auto w-full pt-8 border-t-4 border-[var(--color-accent-pencil)]/10">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
 
                   {/* Niche */}
-                  <div className="space-y-2.5">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[11px] font-label font-bold uppercase tracking-widest text-[var(--color-secondary-blue)]">Niche</span>
-                      <div className="flex-1 h-px bg-[var(--color-secondary-blue)]/15" />
-                      <span className="text-[10px] font-label uppercase opacity-35 tracking-wider">{niche}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
+                  <div className="space-y-5">
+                    <h3 className="text-2xl font-headline text-[var(--color-on-surface)] uppercase tracking-widest">Target Niche</h3>
+                    <div className="header-divider" />
+                    <div className="grid grid-cols-2 gap-3">
                       {NICHE_EXAMPLES.map(n => {
                         const Icon = n.icon;
                         const active = niche === n.id;
@@ -848,31 +845,28 @@ export default function App() {
                           <button
                             key={n.id}
                             onClick={() => setNiche(n.id)}
-                            title={n.example}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase transition-all duration-150 border-2 ${
+                            className={`p-5 text-left transition-all duration-200 flex flex-col items-start gap-3 neo-card neo-shadow-button ${
                               active
-                                ? 'border-[var(--color-secondary-blue)] bg-[var(--color-secondary-blue)] text-white shadow-sm'
-                                : 'border-black/10 bg-transparent text-[var(--color-on-surface)]/40 hover:border-black/25 hover:text-[var(--color-on-surface)]/80 hover:bg-[var(--color-surface-variant)]'
+                                ? 'bg-[var(--color-secondary-blue)] text-white'
+                                : 'bg-[var(--color-surface)] text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)]'
                             }`}
                           >
-                            <Icon className="w-3 h-3 shrink-0" />
-                            {n.title}
+                            <Icon className="w-7 h-7" />
+                            <div>
+                              <span className="font-headline text-lg font-bold uppercase block">{n.title}</span>
+                              <span className="text-xs font-body mt-0.5 opacity-70 block">{n.example}</span>
+                            </div>
                           </button>
                         );
                       })}
                     </div>
                   </div>
 
-                  <div className="h-px bg-black/5" />
-
                   {/* Style */}
-                  <div className="space-y-2.5">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[11px] font-label font-bold uppercase tracking-widest text-[var(--color-on-surface)]/50">Style</span>
-                      <div className="flex-1 h-px bg-black/8" />
-                      <span className="text-[10px] font-label uppercase opacity-35 tracking-wider">{stylePreset}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
+                  <div className="space-y-5">
+                    <h3 className="text-2xl font-headline text-[var(--color-on-surface)] uppercase tracking-widest">Style Preset</h3>
+                    <div className="header-divider" />
+                    <div className="grid grid-cols-2 gap-3">
                       {STYLE_EXAMPLES.map(s => {
                         const Icon = s.icon;
                         const active = stylePreset === s.id;
@@ -880,15 +874,17 @@ export default function App() {
                           <button
                             key={s.id}
                             onClick={() => setStylePreset(s.id)}
-                            title={s.example}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-label uppercase transition-all duration-150 border-2 ${
+                            className={`p-5 text-left transition-all duration-200 flex flex-col items-start gap-3 neo-card neo-shadow-button ${
                               active
-                                ? 'border-[var(--color-accent-pencil)] bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)] shadow-sm'
-                                : 'border-black/10 bg-transparent text-[var(--color-on-surface)]/40 hover:border-black/25 hover:text-[var(--color-on-surface)]/80 hover:bg-[var(--color-surface-variant)]'
+                                ? 'bg-[var(--color-secondary-yellow)] text-[var(--color-on-surface)]'
+                                : 'bg-[var(--color-surface)] text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)]'
                             }`}
                           >
-                            <Icon className="w-3 h-3 shrink-0" />
-                            {s.title}
+                            <Icon className="w-7 h-7" />
+                            <div>
+                              <span className="font-headline text-lg font-bold uppercase block">{s.title}</span>
+                              <span className="text-xs font-body mt-0.5 opacity-70 block">{s.example}</span>
+                            </div>
                           </button>
                         );
                       })}
