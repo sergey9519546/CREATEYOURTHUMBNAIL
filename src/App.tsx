@@ -613,8 +613,8 @@ export default function App() {
               exit={{ opacity: 0, y: -20 }}
               className="w-full flex flex-col"
             >
-              {/* ── Hero + Config: single flowing column ── */}
-              <div className="flex flex-col px-6 pt-16 max-w-4xl mx-auto w-full gap-5">
+              {/* ── Single centered column ── */}
+              <div className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-4xl mx-auto w-full gap-5">
 
               {/* Title */}
               <div className="w-full text-center">
