@@ -613,8 +613,8 @@ export default function App() {
               exit={{ opacity: 0, y: -20 }}
               className="w-full flex flex-col"
             >
-              {/* ── Hero: centered chatbox section ── */}
-              <div className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-4xl mx-auto w-full gap-5">
+              {/* ── Hero + Config: single flowing column ── */}
+              <div className="flex flex-col px-6 pt-16 max-w-4xl mx-auto w-full gap-5">
 
               {/* Title */}
               <div className="w-full text-center">
@@ -843,8 +843,8 @@ export default function App() {
 
               {/* Quick Start Chips — each auto-configures niche/style/palette/layout */}
               <div className="w-full">
-                <p className="text-[10px] font-label uppercase opacity-30 mb-2 tracking-widest">Quick Start</p>
-                <div className="flex flex-wrap gap-2">
+                <p className="text-[10px] font-label uppercase opacity-30 mb-2 tracking-widest text-center">Quick Start</p>
+                <div className="flex flex-wrap justify-center gap-2">
                   {QUICK_STARTS.map((chip, idx) => (
                     <button
                       key={idx}
@@ -866,11 +866,8 @@ export default function App() {
                 </div>
               </div>
 
-              </div>{/* end hero */}
-
-              {/* ── Niche + Style — large cards, below the fold ── */}
-              <div className="px-6 pb-20 max-w-4xl mx-auto w-full">
-              <div className="w-full pt-8 border-t-4 border-[var(--color-accent-pencil)]/10">
+              {/* ── Niche + Style — large cards ── */}
+              <div className="w-full pt-6 border-t-4 border-[var(--color-accent-pencil)]/10 pb-20">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
 
                   {/* Niche */}
@@ -933,7 +930,7 @@ export default function App() {
 
                 </div>
               </div>
-              </div>{/* end config */}
+              </div>{/* end outer container */}
             </motion.div>
           )}
         </AnimatePresence>
