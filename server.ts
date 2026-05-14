@@ -138,7 +138,7 @@ async function startServer() {
         contents.push({
           inlineData: {
             mimeType: getMimeType(imageBase64),
-            data: imageBase64.split(',')[1]
+            data: imageBase64.substring(imageBase64.indexOf(',') + 1)
           }
         });
       }
@@ -225,7 +225,7 @@ async function startServer() {
         contents.push({
           inlineData: {
             mimeType: getMimeType(imageBase64),
-            data: imageBase64.split(',')[1]
+            data: imageBase64.substring(imageBase64.indexOf(',') + 1)
           }
         });
       }
