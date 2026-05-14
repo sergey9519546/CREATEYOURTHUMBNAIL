@@ -294,20 +294,27 @@ async function startServer() {
       }
 
       const data: any = await response.json();
-      console.log("Minimax response data:", JSON.stringify(data));
 
-      // Handle multiple possible response shapes from the Minimax API
-      const imageUrl =
+      // Check for API-level error even when HTTP 200 is returned
+      if (data?.base_resp?.status_code && data.base_resp.status_code !== 0) {
+        throw new Error(`Minimax API error ${data.base_resp.status_code}: ${data.base_resp.status_msg}`);
+      }
+
+      // Actual response shape: { data: { image_urls: ["http://..."] }, ... }
+      const rawUrl =
+        data?.data?.image_urls?.[0] ||
         data?.data?.[0]?.url ||
         data?.images?.[0]?.url ||
-        data?.data?.images?.[0]?.url ||
         data?.output_image_urls?.[0];
 
-      if (imageUrl) {
-        res.json({ imageUrl });
-      } else {
+      if (!rawUrl) {
+        console.error("Unexpected Minimax response shape:", JSON.stringify(data));
         throw new Error("No image URL found in Minimax response");
       }
+
+      // Force HTTPS — Minimax returns http:// URLs which browsers block as mixed content
+      const imageUrl = rawUrl.replace(/^http:\/\//, 'https://');
+      res.json({ imageUrl });
     } catch (error: any) {
       console.error("Error in /api/generate-image:", error);
       const errorMessage = error.message || "Unknown error";

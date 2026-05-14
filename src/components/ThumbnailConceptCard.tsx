@@ -218,7 +218,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
           </div>
 
           {refiningConcepts[concept.concept_number] && (
-            <div className="absolute inset-0 bg-[var(--color-background)]/80 backdrop-blur-sm flex items-center justify-center z-10">
+            <div className="absolute inset-0 bg-[var(--color-bg)]/80 backdrop-blur-sm flex items-center justify-center z-10">
               <div className="flex items-center gap-3 bg-[var(--color-surface)] text-[var(--color-primary)] px-8 py-4 neo-border neo-shadow-button font-label text-lg uppercase">
                 <Loader2 className="w-6 h-6 animate-spin" />
                 <span>Recompiling Assets...</span>

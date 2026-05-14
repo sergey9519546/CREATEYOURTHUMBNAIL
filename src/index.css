@@ -103,3 +103,13 @@
   background-color: var(--color-accent-pencil);
   margin-top: 1rem;
 }
+
+/* Subtle contrast/saturation boost on generated thumbnail images */
+.img-sketch-filter {
+  filter: contrast(1.06) saturate(1.08);
+}
+
+/* Organic hand-drawn blob shape for icon containers */
+.neo-doodle-radius {
+  border-radius: 60% 40% 55% 45% / 45% 55% 40% 60%;
+}
