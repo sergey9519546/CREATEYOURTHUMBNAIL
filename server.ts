@@ -2,7 +2,10 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
+import { config } from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
+
+config(); // load .env into process.env
 
 let aiClient: GoogleGenAI | null = null;
 
