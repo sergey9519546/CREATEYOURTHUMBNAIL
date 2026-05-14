@@ -125,12 +125,36 @@ async function startServer() {
         return res.status(400).json({ error: 'Too many liked concepts (max 20).' });
       }
 
+      // Per-niche strategy injected directly into the generation request —
+      // gives Gemini specific playbook rules, not just a label.
+      const nicheGuidance: Record<string, string> = {
+        'General':       'Authenticity and relatability. Strong face-forward with genuine emotion. Curiosity gap is especially powerful here. Warm personal palette. Instant recognizability is mandatory.',
+        'Gaming':        'Dynamic action compositions, freeze-frame mid-play reactions, red/green danger signals, neon on dark backgrounds, aggressive short text ("INSANE", "CLUTCH"). Show the emotional REACTION, not just gameplay.',
+        'Finance':       'Dollar amounts/percentages as the absolute focal point. Green (gains) vs red (losses) contrast mandatory. Professional aesthetic with shocking numbers. Implied wealth transformation.',
+        'Fitness':       'Before/after transformation split screens dominate this niche. Determination or triumph expression. Bold warm palette (orange/red/yellow). Specific timeframes in text. Body transformation is the hero subject.',
+        'Education':     'Clarity over cleverness — never sacrifice comprehension for style. Blue/yellow trust-energy contrast. Visual metaphors simplifying complex ideas. "Aha moment" expression. Numbered indicators work well.',
+        'Entertainment': 'Maximum emotional intensity. Scale contrasts (tiny vs huge, cheap vs expensive). Bright saturated primaries. Face communicates the REACTION not the action. Dollar amounts and stakes drive clicks.',
+        'Tech':          'Product is the hero — hyper-sharp and perfectly lit. Human in soft focus provides emotional context. Apple-style clean aesthetic. Comparison/versus layouts perform extremely well.',
+        'Food':          'Food is the hero — extreme macro showing texture, steam, and gloss. Warm golden lighting. Human taste-reaction face adds emotion. Before/after cooking transformations work well.',
+      };
+
+      const styleGuidance: Record<string, string> = {
+        'Adventure':    'Diagonal lines suggesting motion. Hyper-saturated wide-angle drama. Subject looks mid-action or on the verge of acting. Scale drama (tiny person vs massive environment). Pure kinetic energy.',
+        'Documentary':  'Moody cinematic chiaroscuro lighting. Slightly desaturated with teal/orange grade. Thoughtful serious expression. Negative space creates weight. One powerful image beats multiple competing elements.',
+        'Review':       'Product/subject in perfect sharp studio focus. Clean light backgrounds. Side-by-side comparison layouts dominate. Expression: analytically impressed or skeptically evaluating. Professional and trustworthy.',
+        'Minimalist':   'Bold negative space is intentional. Maximum 2 focal elements. Typography-forward: single large word or phrase. One bold accent color against white/black. Perfect isolated clean cutouts.',
+        'Viral':        'Extreme reaction faces at maximum intensity. Over-saturated near-cartoon colors. Red/yellow arrows and callout circles. Meme-aware chaotic composition. Creates instant confusion and curiosity in viewer.',
+        'Tutorial':     'Numbered step indicators or before/after split framing. Clean organized grid layout. Directional arrows and callouts. Subject visibly demonstrates the result. Warm approachable lighting.',
+      };
+
       const contents: any[] = [
         `Video Idea/Title: ${idea}`,
-        `Requested Niche: ${niche || 'General'}`,
-        `Requested Style Preset: ${stylePreset || 'Adventure'}`,
-        `Requested Layout: ${layout || 'Default'}`,
-        `Requested Palette: ${palette || 'Vibrant'}`
+        `Target Niche: ${niche || 'General'}`,
+        `Visual Style: ${stylePreset || 'Adventure'}`,
+        `Layout: ${layout || 'Default'}`,
+        `Color Palette: ${palette || 'Vibrant'}`,
+        `Niche Strategy: ${nicheGuidance[niche] || nicheGuidance['General']}`,
+        `Style Directive: ${styleGuidance[stylePreset] || ''}`,
       ];
 
       if (Array.isArray(likedConcepts) && likedConcepts.length > 0) {
@@ -296,31 +320,42 @@ async function startServer() {
       const validAspectRatios = ['16:9', '9:16', '1:1'];
       const safeAspectRatio = validAspectRatios.includes(aspectRatio) ? aspectRatio : '16:9';
 
-      // Keys match the niche IDs sent by the client
+      // Image generation modifiers — all 8 niches and 6 styles covered, no silent fall-throughs
       const nicheModifiers: Record<string, string> = {
-        'Gaming': "Dynamic lighting, red/green danger indicators, extreme zooms on mid-action reaction faces, short exclamation text.",
-        'Finance': "Large dollar amounts or percentages as the absolute focal point. Green for gains, red for losses. Clean, professional aesthetic with a subtle shock factor.",
-        'Fitness': "Transformation compositions (before/after split screens), determination/success expressions, bold warm colors, action text.",
-        'Education': "Clarity over cleverness. Bold blue/yellow contrast (Trust + Energy). Step indicators, clean and organized layout.",
+        'General':       "Strong face-forward composition, single clear focal point, high-contrast primary colors, genuine emotional expression, bold curiosity-gap visual.",
+        'Gaming':        "Dynamic lighting, red/green danger indicators, extreme zooms on mid-action reaction faces, short exclamation text.",
+        'Finance':       "Large dollar amounts or percentages as the absolute focal point. Green for gains, red for losses. Clean, professional aesthetic with a subtle shock factor.",
+        'Fitness':       "Transformation compositions (before/after split screens), determination/success expressions, bold warm colors, action text.",
+        'Education':     "Clarity over cleverness. Bold blue/yellow contrast (Trust + Energy). Step indicators, clean and organized layout.",
         'Entertainment': "Diagonal compositions to create visual tension, heavily saturated warm colors, maximum facial emotion.",
-        'Tech': "The product is the hero, heavily sharpened and in ultra-focus. Human subject in the background with soft focus. Clean studio lighting, sleek Apple-style color grading."
+        'Tech':          "The product is the hero, heavily sharpened and in ultra-focus. Human subject in the background with soft focus. Clean studio lighting, sleek Apple-style color grading.",
+        'Food':          "Hero food close-up with dramatic steam and texture, extreme macro food photography, warm golden lighting, mouth-watering glossy presentation.",
       };
 
       const stylePresets: Record<string, string> = {
-        'Adventure': "Hyper-saturated action shot, extreme wide-angle lens distortion, vibrant lighting, volumetric fog, high-energy composition.",
+        'Adventure':   "Hyper-saturated action shot, extreme wide-angle lens distortion, vibrant lighting, volumetric fog, high-energy composition.",
         'Documentary': "Dramatic moody lighting, cinematic mystery aesthetic, dark vignetting, high local contrast, film grain, blurred storytelling background.",
-        'Review': "Minimalist high-tech aesthetic, ultra-sharp macro focus on product, clean studio lighting, soft shadows, professional tech-enthusiast vibe.",
-        'Minimalist': "Clean composition, minimal elements, strong negative space, single focal point, elegant typography."
+        'Review':      "Minimalist high-tech aesthetic, ultra-sharp macro focus on product, clean studio lighting, soft shadows, professional tech-enthusiast vibe.",
+        'Minimalist':  "Clean composition, minimal elements, strong negative space, single focal point, elegant typography.",
+        'Viral':       "Extreme shock/disbelief expression, over-saturated near-cartoon colors, bold red and yellow callout arrows, chaotic meme-aware composition, maximum curiosity gap visual.",
+        'Tutorial':    "Clean organized layout with numbered step indicators, before/after split framing, directional arrows and callouts, warm approachable professional lighting.",
       };
 
       const colorPairings: Record<string, string> = {
-        'Vibrant': 'Yellow+Black (Urgency)',
-        'Minimalist': 'Blue+Yellow (Trust)',
-        'Dark Mode': 'Red+White (Drama)',
-        'High Contrast': 'Orange+Dark Blue (Excitement)'
+        'Vibrant':       'Yellow+Black (Urgency)',
+        'Minimalist':    'Blue+White (Trust)',
+        'Dark Mode':     'Red+White (Drama)',
+        'High Contrast': 'Orange+Dark Blue (Excitement)',
       };
 
-      const enhancedPrompt = `[BASE PROMPT: ${prompt}, Layout: ${layout || 'Default'}, Cinematic Lighting, Professional Photography, Saturation: ${saturation || 100}%] + [NICHE MODIFIER: ${nicheModifiers[niche] || ''}] + [STYLE PRESET: ${stylePresets[stylePreset] || ''}] + [HOOK & COLOR: Curiosity Gap, ${colorPairings[palette] || 'Red+Green (Comparison)'}] + [TYPOGRAPHY: Bold, readable text, 3D effect] + [CTR PRINCIPLES: Clear emotion, High Contrast]`;
+      const layoutModifiers: Record<string, string> = {
+        'Split Screen':      "Perfect 50/50 split composition with a strong center dividing line, contrasting left vs right visual elements telling opposite sides of a story.",
+        'Centered Subject':  "Subject perfectly centered with symmetrical negative space on both sides, strong center-weighted dominant composition.",
+        'Grid':              "Multi-panel 2x2 or 3x1 grid layout, each cell contains a distinct visual element, grid structure is clearly visible and organized.",
+        'Default':           "",
+      };
+
+      const enhancedPrompt = `${prompt} | NICHE: ${nicheModifiers[niche] || nicheModifiers['General']} | STYLE: ${stylePresets[stylePreset] || ''} | LAYOUT: ${layoutModifiers[layout] || ''} | PALETTE: ${colorPairings[palette] || 'Yellow+Black (Urgency)'} | TECHNICAL: Cinematic lighting, professional photography, ${saturation || 100}% saturation | CTR: Bold readable text with 3D depth effect, clear strong emotional expression, high contrast foreground vs background`;
 
       const minimaxApiKey = process.env.MINIMAX_API_KEY;
       if (!minimaxApiKey) {

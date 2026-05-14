@@ -39,6 +39,39 @@ const STYLE_EXAMPLES = [
   { id: 'Tutorial', icon: BookOpen, title: 'Tutorial', example: 'Step-by-step, educational' },
 ];
 
+const QUICK_STARTS = [
+  {
+    label: 'MrBeast Style',
+    prompt: 'I gave $10,000 to a random stranger on the street',
+    icon: Zap,
+    niche: 'Entertainment', style: 'Adventure', palette: 'Vibrant', layout: 'Default',
+  },
+  {
+    label: 'Before / After',
+    prompt: 'I transformed my body in 30 days with no gym or diet',
+    icon: RefreshCw,
+    niche: 'Fitness', style: 'Documentary', palette: 'High Contrast', layout: 'Split Screen',
+  },
+  {
+    label: 'Curiosity Gap',
+    prompt: 'The one morning habit that changed my entire life',
+    icon: Eye,
+    niche: 'General', style: 'Documentary', palette: 'Dark Mode', layout: 'Default',
+  },
+  {
+    label: 'High Stakes',
+    prompt: 'I quit my 9-5 job and started a business with only $100',
+    icon: Target,
+    niche: 'Finance', style: 'Adventure', palette: 'Vibrant', layout: 'Default',
+  },
+  {
+    label: 'Luxury vs Budget',
+    prompt: '$10 vs $10,000 vacation — which one was actually better?',
+    icon: TrendingUp,
+    niche: 'Entertainment', style: 'Review', palette: 'High Contrast', layout: 'Split Screen',
+  },
+] as const;
+
 const COGNITIVE_STEPS = [
   { text: "Analyzing visual psychology triggers...", icon: Eye },
   { text: "Optimizing color contrast for mobile...", icon: Palette },
@@ -808,22 +841,23 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Quick Start Chips — below chatbox */}
+              {/* Quick Start Chips — each auto-configures niche/style/palette/layout */}
               <div className="max-w-4xl mx-auto w-full">
                 <p className="text-[10px] font-label uppercase opacity-30 mb-2 tracking-widest">Quick Start</p>
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    { label: "MrBeast Style", prompt: "I gave $10,000 to a random stranger on the street", icon: Zap },
-                    { label: "Before/After", prompt: "I transformed my body in 30 days with no gym or diet", icon: RefreshCw },
-                    { label: "Curiosity Gap", prompt: "The one morning habit that changed my entire life", icon: Eye },
-                    { label: "High Stakes", prompt: "I quit my 9-5 job and started a business with only $100", icon: Target },
-                    { label: "Luxury vs Budget", prompt: "$10 vs $10,000 vacation — which one was actually better?", icon: TrendingUp }
-                  ].map((chip, idx) => (
+                  {QUICK_STARTS.map((chip, idx) => (
                     <button
                       key={idx}
-                      onClick={() => { setInput(chip.prompt); handleGenerate(undefined, chip.prompt); }}
+                      onClick={() => {
+                        setInput(chip.prompt);
+                        setNiche(chip.niche);
+                        setStylePreset(chip.style);
+                        setPalette(chip.palette);
+                        setLayout(chip.layout);
+                        handleGenerate(undefined, chip.prompt);
+                      }}
                       className="px-3 py-1.5 bg-[var(--color-surface)] neo-border neo-shadow-button hover:bg-[var(--color-secondary-yellow)] transition-all duration-200 flex items-center gap-1.5 font-label text-[10px] uppercase tracking-wider group"
-                      title={chip.prompt}
+                      title={`${chip.prompt} · ${chip.niche} · ${chip.style}`}
                     >
                       <chip.icon className="w-3 h-3 group-hover:scale-110 transition-transform" />
                       {chip.label}
