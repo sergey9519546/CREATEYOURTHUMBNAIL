@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Terminal, Image as ImageIcon, Zap, Loader2, CheckSquare, Square, AlertCircle, ChevronRight, Activity, RefreshCw,
-  Gamepad2, TrendingUp, BookOpen, Film, Laptop, Mountain, Video, Box, Send, Sparkles, Globe, Coffee, Palette, X, Lightbulb, Heart, Plus, LayoutTemplate, Trash2,
-  Ghost, Eye, MousePointerClick, Wand2, Scissors, Paintbrush, Target, Settings, MessageSquare, Smartphone, Download
+import {
+  Terminal, Image as ImageIcon, Zap, Loader2, CheckSquare, AlertCircle, ChevronRight, Activity, RefreshCw,
+  Gamepad2, TrendingUp, BookOpen, Film, Laptop, Mountain, Video, Box, Sparkles, Globe, Coffee, Palette, X, Heart, LayoutTemplate, Trash2,
+  Ghost, Eye, MousePointerClick, Wand2, Target, Settings, MessageSquare, Smartphone, Download
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
@@ -37,86 +37,6 @@ const STYLE_EXAMPLES = [
   { id: 'Minimalist', icon: Palette, title: 'Minimalist', example: 'Aesthetic, highly curated' },
 ];
 
-const getRefinementSuggestions = (hook: string, psychology: string): string[] => {
-  const h = hook.toLowerCase();
-  const p = psychology.toLowerCase();
-  const suggestions: Set<string> = new Set();
-
-  // 1. Specific Strategy Combinations
-  if (p.includes('curiosity') && h.includes('number')) {
-    suggestions.add("Make the number glow to increase focus");
-    suggestions.add("Use a '?' instead of a digit to amplify mystery");
-    suggestions.add("Partially obscure the number to create a curiosity gap");
-    suggestions.add("Use a 3D extruded font for the number for visual weight");
-    suggestions.add("Add a 'censored' bar over the number");
-  } else if (p.includes('fear') && h.includes('comparison')) {
-    suggestions.add("Make the 'bad' side darker to increase contrast");
-    suggestions.add("Add a warning sign to the 'bad' side");
-    suggestions.add("Use a red tint on the 'bad' side for urgency");
-    suggestions.add("Make the 'good' side brighter to enhance the contrast");
-  } else if (p.includes('joy') && h.includes('storytelling')) {
-    suggestions.add("Add a bright, happy background");
-    suggestions.add("Make the subject's expression more ecstatic");
-    suggestions.add("Use vibrant, warm colors to boost energy");
-    suggestions.add("Add a 'happy' narrative element to the background");
-  }
-
-  // 2. Trigger-based refinements (Pillar 2: Face & Emotion, Pillar 5: Curiosity Gap)
-  if (p.includes('curiosity') || p.includes('mystery')) {
-    suggestions.add("Add a '?' to the text to drive clicks");
-    suggestions.add("Blur the background more to push the subject forward");
-    suggestions.add("Make the main subject look surprised");
-    suggestions.add("Add a hidden object in the background");
-  } else if (p.includes('fear') || p.includes('urgency')) {
-    suggestions.add("Add a red border for urgency");
-    suggestions.add("Make the text bolder and more aggressive");
-    suggestions.add("Add a warning icon");
-    suggestions.add("Increase contrast for a starker, more dramatic look");
-  } else if (p.includes('joy') || p.includes('excitement')) {
-    suggestions.add("Increase color saturation to 100%");
-    suggestions.add("Add a smiling face with closed mouth (MrBeast strategy)");
-    suggestions.add("Make the lighting brighter and more positive");
-    suggestions.add("Add confetti or sparkles for energy");
-  } else if (p.includes('controversy')) {
-    suggestions.add("Use a more confrontational pose");
-    suggestions.add("Add a 'vs' element");
-    suggestions.add("Use high-contrast, aggressive typography");
-  }
-
-  // 3. Hook-based refinements (Pillar 1: Single Story, Pillar 4: Text Strategy, Pillar 6: Visual Hierarchy)
-  if (h.includes('comparison') || h.includes('versus')) {
-    suggestions.add("Add a split-screen divider for clear story separation");
-    suggestions.add("Enhance the 'after' contrast");
-    suggestions.add("Make the 'before' desaturated");
-    suggestions.add("Use a 'before' and 'after' label");
-  } else if (h.includes('storytelling') || h.includes('narrative')) {
-    suggestions.add("Add a narrative element to the background");
-    suggestions.add("Make the subject look more expressive");
-    suggestions.add("Adjust lighting to focus on the subject");
-    suggestions.add("Add a background element that tells a story");
-  } else if (h.includes('authority') || h.includes('expert')) {
-    suggestions.add("Add a professional badge or icon");
-    suggestions.add("Make the text cleaner and more authoritative");
-    suggestions.add("Adjust lighting for a studio look");
-    suggestions.add("Use a more formal, clean background");
-  } else if (h.includes('listicle')) {
-    suggestions.add("Add a number badge for scannability");
-    suggestions.add("Use a grid layout for items");
-    suggestions.add("Make the text more scannable and bold");
-  }
-
-  // Fallback
-  if (suggestions.size === 0) {
-    suggestions.add("Increase text size for mobile readability");
-    suggestions.add("Boost subject brightness by 20%");
-    suggestions.add("Simplify the background to reduce noise");
-    suggestions.add("Add more detail to the primary subject");
-    suggestions.add("Use a more vibrant, high-contrast color palette");
-  }
-  
-  return Array.from(suggestions).slice(0, 6);
-};
-
 const COGNITIVE_STEPS = [
   { text: "Analyzing visual psychology triggers...", icon: Eye },
   { text: "Optimizing color contrast for mobile...", icon: Palette },
@@ -125,8 +45,8 @@ const COGNITIVE_STEPS = [
   { text: "Finalizing high-CTR layout...", icon: Target }
 ];
 
-const SettingsDrawer = ({ 
-  isOpen, onClose, niche, setNiche, stylePreset, setStylePreset,
+const SettingsDrawer = ({
+  isOpen, onClose,
   aspectRatio, setAspectRatio, resolution, setResolution, saturation, setSaturation,
   onSelectKey
 }: any) => {
@@ -286,30 +206,34 @@ export default function App() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // For preview
+      if (selectedImage) URL.revokeObjectURL(selectedImage);
       const previewUrl = URL.createObjectURL(file);
       setSelectedImage(previewUrl);
-
-      // For backend
       const reader = new FileReader();
       reader.onloadend = () => {
         setBase64Image(reader.result as string);
+        // Reset so the same file can be re-selected after clearing
+        if (fileInputRef.current) fileInputRef.current.value = '';
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleGenerate = async (e?: React.FormEvent) => {
+  const handleGenerate = async (e?: React.FormEvent, overrideInput?: string) => {
     if (e) e.preventDefault();
-    if (!input.trim()) return;
+    const effectiveInput = overrideInput || input;
+    if (!effectiveInput.trim()) return;
 
     setState('generating');
     setError(null);
     setChatInputs({});
     setShowRefinementFor({});
+    setImageEdits({});
+    setMobilePreviewFor({});
+    setRefiningConcepts({});
 
     try {
-      const concepts = await getThumbnailConcepts(input, niche, stylePreset, layout, palette, base64Image || undefined, likedConcepts);
+      const concepts = await getThumbnailConcepts(effectiveInput, niche, stylePreset, layout, palette, base64Image || undefined, likedConcepts);
       setResults(concepts);
       
       let imageErrors: string[] = [];
@@ -401,6 +325,14 @@ export default function App() {
     }
   };
 
+  if (hasKey === null) {
+    return (
+      <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-[var(--color-primary)]" />
+      </div>
+    );
+  }
+
   if (hasKey === false) {
     return (
       <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-on-surface)] flex flex-col items-center justify-center p-6">
@@ -410,7 +342,7 @@ export default function App() {
           </div>
           <h2 className="text-4xl font-headline tracking-tight">API Key Required</h2>
           <p className="text-[var(--color-on-surface)] text-2xl leading-relaxed font-body">
-            To generate high-quality 2K thumbnails with the advanced Gemini 3.1 Flash Image model, you need to provide your own Google Cloud API key.
+            To generate thumbnail concepts with Gemini and images with Minimax, you need to provide your own Google Cloud API key.
           </p>
           <div className="text-xl text-[var(--color-on-surface)] bg-[var(--color-surface-container)] p-4 neo-card text-left font-body">
             <p className="mb-2">&gt; Note: You must select an API key from a paid Google Cloud project.</p>
@@ -435,13 +367,17 @@ export default function App() {
       <main className="flex-1 flex flex-col relative overflow-y-auto bg-[var(--color-bg)]">
         
         
-        <SettingsDrawer 
-          isOpen={isSettingsOpen} 
-          onClose={() => setIsSettingsOpen(false)} 
-          niche={niche} 
-          setNiche={setNiche} 
-          stylePreset={stylePreset} 
-          setStylePreset={setStylePreset}
+        {/* Backdrop — click outside drawer to close */}
+        {isSettingsOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+            onClick={() => setIsSettingsOpen(false)}
+          />
+        )}
+
+        <SettingsDrawer
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
           aspectRatio={aspectRatio}
           setAspectRatio={setAspectRatio}
           resolution={resolution}
@@ -568,8 +504,8 @@ export default function App() {
                     >
                       <ImageIcon className="w-4 h-4 text-gray-500" />
                       <span className="text-sm text-gray-700 truncate max-w-[120px]">ref_img.jpg</span>
-                      <button 
-                        onClick={() => setSelectedImage(null)}
+                      <button
+                        onClick={() => { setSelectedImage(null); setBase64Image(null); }}
                         className="text-gray-400 hover:text-gray-600"
                         title="Delete"
                       >
@@ -647,38 +583,6 @@ export default function App() {
                   )}
                 </AnimatePresence>
 
-                {/* Subject Upload Preview */}
-                <AnimatePresence>
-                  {selectedImage && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      className="mb-4 relative inline-block"
-                    >
-                      <div className="relative group">
-                        <div className="w-24 h-24 neo-border overflow-hidden bg-white neo-shadow-button">
-                          <img 
-                            src={selectedImage} 
-                            alt="Subject Reference" 
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        </div>
-                        <button 
-                          onClick={() => setSelectedImage(null)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white p-1 neo-border hover:bg-red-600 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold px-2 py-0.5 uppercase tracking-tighter whitespace-nowrap">
-                          Subject Locked
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
                 {/* Subject Upload Preview in Chatbox */}
                 <AnimatePresence>
                   {selectedImage && (
@@ -716,7 +620,7 @@ export default function App() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Describe your video concept..."
                   className="w-full bg-transparent text-[#1F1F1F] p-2 font-body text-lg focus:outline-none min-h-[48px] resize-none placeholder:text-gray-400 leading-relaxed transition-all duration-200 ease-in-out overflow-hidden"
-                  disabled={state === 'generating'}
+                  disabled={false}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -745,12 +649,14 @@ export default function App() {
                       />
                     </button>
                     {/* Clear Button */}
-                    <button 
+                    <button
                       type="button"
                       onClick={() => {
                         setInput('');
+                        if (selectedImage) URL.revokeObjectURL(selectedImage);
                         setSelectedImage(null);
                         setBase64Image(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
                         setLayout('Default');
                         setPalette('Vibrant');
                       }}
@@ -760,7 +666,7 @@ export default function App() {
                       <Trash2 className="w-5 h-5" />
                     </button>
                     {/* Layout/Add Icon */}
-                    <button 
+                    <button
                       onClick={() => {
                         setLayoutMode(!layoutMode);
                         setPaletteMode(false);
@@ -770,6 +676,14 @@ export default function App() {
                     >
                       <LayoutTemplate className="w-5 h-5" />
                       {layout !== 'Default' && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-black rounded-full" />}
+                    </button>
+                    {/* Include Face Toggle */}
+                    <button
+                      onClick={() => setIncludeFace(!includeFace)}
+                      className={`p-2 transition-colors flex items-center justify-center rounded-lg ${!includeFace ? 'bg-[var(--color-secondary-yellow)] text-black' : 'hover:bg-gray-200 text-gray-600'}`}
+                      title={includeFace ? "Face included — click to disable" : "No face (ghost mode) — click to enable"}
+                    >
+                      <Ghost className="w-5 h-5" />
                     </button>
                   </div>
 
@@ -798,7 +712,7 @@ export default function App() {
                     {/* Submit Button */}
                     <button 
                       onClick={handleGenerate}
-                      disabled={!input.trim() || state === 'generating'}
+                      disabled={!input.trim()}
                       className="bg-[#1F1F1F] text-white px-5 py-2 font-label text-sm hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 rounded-full"
                     >
                       <span>Execute ◁</span>
@@ -807,19 +721,20 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Quick Start Chips - Moved Under Chatbox and Smaller */}
+              {/* Quick Start Chips */}
               <div className="mb-12 flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
                 {[
-                  { label: "MrBeast Style", icon: Zap },
-                  { label: "Before/After", icon: RefreshCw },
-                  { label: "Curiosity Gap", icon: Eye },
-                  { label: "High Stakes", icon: Target },
-                  { label: "Luxury/Budget", icon: TrendingUp }
+                  { label: "MrBeast Style", prompt: "I gave $10,000 to a random stranger on the street", icon: Zap },
+                  { label: "Before/After", prompt: "I transformed my body in 30 days with no gym or diet", icon: RefreshCw },
+                  { label: "Curiosity Gap", prompt: "The one morning habit that changed my entire life", icon: Eye },
+                  { label: "High Stakes", prompt: "I quit my 9-5 job and started a business with only $100", icon: Target },
+                  { label: "Luxury vs Budget", prompt: "$10 vs $10,000 vacation — which one was actually better?", icon: TrendingUp }
                 ].map((chip, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setInput(chip.label)}
+                    onClick={() => { setInput(chip.prompt); handleGenerate(undefined, chip.prompt); }}
                     className="px-3 py-1.5 bg-[var(--color-surface)] neo-border neo-shadow-button hover:bg-[var(--color-secondary-yellow)] transition-all duration-300 flex items-center gap-2 font-label text-[10px] uppercase tracking-wider group"
+                    title={chip.prompt}
                   >
                     <chip.icon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                     {chip.label}
@@ -1015,7 +930,7 @@ export default function App() {
                 
                 <div className="flex flex-col gap-4 bg-[var(--color-surface)] neo-border neo-shadow-card p-6 min-w-[240px]">
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-label text-[var(--color-on-surface)] uppercase opacity-60">Target Niche</span>
+                    <span className="text-xs font-label text-[var(--color-on-surface)] uppercase opacity-60">Niche</span>
                     <span className="text-sm font-label font-bold text-[var(--color-on-primary)] bg-[var(--color-secondary-blue)] neo-border px-3 py-1 uppercase inline-block w-fit">{results.niche_applied}</span>
                   </div>
                   <div className="flex flex-col gap-1">
@@ -1028,7 +943,7 @@ export default function App() {
               {/* Concepts Feed */}
               <div className="space-y-12">
                 {results.thumbnails.map((concept, idx) => (
-                  <ThumbnailConceptCard 
+                  <ThumbnailConceptCard
                     key={concept.concept_number}
                     concept={concept}
                     idx={idx}
@@ -1040,6 +955,12 @@ export default function App() {
                     getCTRScore={getCTRScore}
                     handleRefine={handleRefine}
                     setResults={setResults}
+                    toggleLike={toggleLike}
+                    likedConcepts={likedConcepts}
+                    chatInputs={chatInputs}
+                    setChatInputs={setChatInputs}
+                    showRefinementFor={showRefinementFor}
+                    setShowRefinementFor={setShowRefinementFor}
                   />
                 ))}
               </div>
@@ -1065,11 +986,3 @@ export default function App() {
   );
 }
 
-function DataRow({ label, value }: { label: string, value: string }) {
-  return (
-    <div className="space-y-3 flex flex-col items-center">
-      <span className="text-sm font-label font-bold text-[var(--color-on-surface)] uppercase">{label}</span>
-      <p className="text-2xl text-[var(--color-on-surface)] leading-relaxed font-body">{value}</p>
-    </div>
-  );
-}
