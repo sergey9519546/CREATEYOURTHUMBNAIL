@@ -44,6 +44,15 @@ const sanitizeError = (err: any): string => {
 
 // Simple in-memory rate limiter (per IP, sliding window)
 const ipWindows = new Map<string, { count: number; resetAt: number }>();
+
+// Purge expired windows every 5 minutes to prevent unbounded map growth
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, win] of ipWindows) {
+    if (now > win.resetAt) ipWindows.delete(ip);
+  }
+}, 5 * 60_000).unref();
+
 const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
@@ -143,7 +152,10 @@ async function startServer() {
         });
       }
 
-      const response = await ai.models.generateContent({
+      const geminiTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini API request timed out after 90s')), 90_000)
+      );
+      const response = await Promise.race([ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents,
         config: {
@@ -179,7 +191,7 @@ async function startServer() {
             required: ["video_context_summary", "niche_applied", "style_preset_applied", "thumbnails", "optimization_notes", "chat_prompt"]
           }
         }
-      });
+      }), geminiTimeout]);
 
       if (!response.text) throw new Error("AI returned an empty response — try again");
       try {
@@ -230,7 +242,10 @@ async function startServer() {
         });
       }
 
-      const response = await ai.models.generateContent({
+      const geminiTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini API request timed out after 90s')), 90_000)
+      );
+      const response = await Promise.race([ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents,
         config: {
@@ -253,7 +268,7 @@ async function startServer() {
             required: ["concept_number", "concept_name", "hook", "layout", "text_overlay", "color_strategy", "psychology", "ctr_explanation", "image_generation_prompt", "refinement_notes"]
           }
         }
-      });
+      }), geminiTimeout]);
 
       if (!response.text) throw new Error("AI returned an empty response — try again");
       try {

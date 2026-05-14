@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Terminal, Image as ImageIcon, Zap, Loader2, CheckSquare, AlertCircle, ChevronRight, Activity, RefreshCw,
   Gamepad2, TrendingUp, BookOpen, Film, Laptop, Mountain, Video, Box, Sparkles, Globe, Coffee, Palette, X, Heart, LayoutTemplate, Trash2,
-  Ghost, Eye, MousePointerClick, Wand2, Target, Settings, MessageSquare, Smartphone, Download
+  Ghost, Eye, MousePointerClick, Wand2, Target, Settings
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
@@ -45,11 +45,23 @@ const COGNITIVE_STEPS = [
   { text: "Finalizing high-CTR layout...", icon: Target }
 ];
 
+interface SettingsDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  aspectRatio: string;
+  setAspectRatio: (v: string) => void;
+  resolution: string;
+  setResolution: (v: string) => void;
+  saturation: number;
+  setSaturation: (v: number) => void;
+  onSelectKey: () => void;
+}
+
 const SettingsDrawer = ({
   isOpen, onClose,
   aspectRatio, setAspectRatio, resolution, setResolution, saturation, setSaturation,
   onSelectKey
-}: any) => {
+}: SettingsDrawerProps) => {
   return (
       <motion.div
         initial={{ x: '100%' }}
@@ -176,9 +188,11 @@ export default function App() {
   }, [likedConcepts]);
 
   useEffect(() => {
-    if (input.trim()) {
+    if (!input.trim()) return;
+    const timer = setTimeout(() => {
       try { localStorage.setItem('cyt_input', input); } catch {}
-    }
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [input]);
 
   // ── API key check ────────────────────────────────────────────────────────
