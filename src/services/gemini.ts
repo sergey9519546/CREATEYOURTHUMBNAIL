@@ -1,3 +1,13 @@
+export interface ImageEditState {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  subjectSize: number;
+  textPosition: 'top' | 'center' | 'bottom';
+  backgroundColor?: string;
+  emphasis?: 'text' | 'balanced' | 'subject';
+}
+
 export interface ThumbnailConcept {
   concept_number: number;
   concept_name: string;
