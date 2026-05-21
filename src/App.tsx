@@ -231,14 +231,6 @@ export default function App() {
   }, [input]);
 
   // ── API key check ────────────────────────────────────────────────────────
-  const getCTRScore = (concept: ThumbnailConcept) => {
-    let score = 85;
-    if (concept.hook.toLowerCase().includes('curiosity')) score += 5;
-    if (concept.psychology.toLowerCase().includes('shock')) score += 3;
-    if (concept.text_overlay.split(' ').length <= 4) score += 5;
-    return Math.min(score, 99);
-  };
-
   useEffect(() => {
     const checkApiKey = async () => {
       if (window.aistudio && window.aistudio.hasSelectedApiKey) {
@@ -1065,7 +1057,6 @@ export default function App() {
                     imageEdits={imageEdits}
                     setImageEdits={setImageEdits}
                     refiningConcepts={refiningConcepts}
-                    getCTRScore={getCTRScore}
                     handleRefine={handleRefine}
                     handleRegenerateImage={handleRegenerateImage}
                     setResults={setResults}
