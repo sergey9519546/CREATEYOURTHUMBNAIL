@@ -7,6 +7,15 @@ import {
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
+export interface ImageEditState {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  subjectSize?: number;
+  textPosition?: 'top' | 'center' | 'bottom';
+  emphasis?: 'subject' | 'text' | 'balanced';
+}
+
 
 declare global {
   interface Window {
