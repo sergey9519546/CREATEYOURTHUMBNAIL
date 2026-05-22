@@ -208,24 +208,26 @@ export default function App() {
   useEffect(() => {
     try {
       if (localStorage.getItem('cyt_results')) setShowRestoreBar(true);
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to access localStorage:', err);
+    }
   }, []);
 
   // ── localStorage: auto-save on change ───────────────────────────────────
   useEffect(() => {
     if (results) {
-      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch (err) { console.warn('Failed to save cyt_results:', err); }
     }
   }, [results]);
 
   useEffect(() => {
-    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch (err) { console.warn('Failed to save cyt_liked:', err); }
   }, [likedConcepts]);
 
   useEffect(() => {
     if (!input.trim()) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem('cyt_input', input); } catch {}
+      try { localStorage.setItem('cyt_input', input); } catch (err) { console.warn('Failed to save cyt_input:', err); }
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
@@ -363,7 +365,8 @@ export default function App() {
               : concept.image_generation_prompt;
             const imageUrl = await generateThumbnailImage(prompt, niche, stylePreset, layout, palette, aspectRatio, resolution, base64Image || undefined, saturation);
             return { ...concept, concept_number: newNumber, imageUrl };
-          } catch {
+          } catch (err) {
+            console.warn('Image generation failed for concept:', err);
             return { ...concept, concept_number: newNumber };
           }
         })
@@ -439,7 +442,7 @@ export default function App() {
     setImageEdits({});
     setMobilePreviewFor({});
     setRefiningConcepts({});
-    try { localStorage.removeItem('cyt_results'); } catch {}
+    try { localStorage.removeItem('cyt_results'); } catch (err) { console.warn('Failed to remove cyt_results:', err); }
   };
 
   // ── Loading screen ───────────────────────────────────────────────────────
@@ -524,7 +527,9 @@ export default function App() {
                         if (saved) { setResults(JSON.parse(saved)); setState('result'); }
                         if (savedLiked) setLikedConcepts(JSON.parse(savedLiked));
                         if (savedInput) setInput(savedInput);
-                      } catch {}
+                      } catch (err) {
+                        console.warn('Failed to restore session:', err);
+                      }
                       setShowRestoreBar(false);
                     }}
                     className="px-3 py-1 bg-[var(--color-on-surface)] text-[var(--color-bg)] text-[10px] font-label uppercase neo-border hover:opacity-80 transition-opacity"
@@ -537,7 +542,9 @@ export default function App() {
                         localStorage.removeItem('cyt_results');
                         localStorage.removeItem('cyt_liked');
                         localStorage.removeItem('cyt_input');
-                      } catch {}
+                      } catch (err) {
+                        console.warn('Failed to clear session:', err);
+                      }
                       setShowRestoreBar(false);
                     }}
                     className="p-1 opacity-40 hover:opacity-100 transition-opacity"
