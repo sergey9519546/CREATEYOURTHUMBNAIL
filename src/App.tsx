@@ -153,6 +153,27 @@ const SettingsDrawer = ({
   );
 };
 
+
+const curiosityRegex = /curiosity/i;
+const shockRegex = /shock/i;
+
+const getCTRScore = (concept: ThumbnailConcept) => {
+  let score = 85;
+  if (curiosityRegex.test(concept.hook)) score += 5;
+  if (shockRegex.test(concept.psychology)) score += 3;
+
+  let spaces = 0;
+  for (let i = 0; i < concept.text_overlay.length; i++) {
+    if (concept.text_overlay[i] === ' ') {
+      spaces++;
+      if (spaces >= 4) break;
+    }
+  }
+  if (spaces < 4) score += 5;
+
+  return Math.min(score, 99);
+};
+
 export default function App() {
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [input, setInput] = useState('');
@@ -231,13 +252,6 @@ export default function App() {
   }, [input]);
 
   // ── API key check ────────────────────────────────────────────────────────
-  const getCTRScore = (concept: ThumbnailConcept) => {
-    let score = 85;
-    if (concept.hook.toLowerCase().includes('curiosity')) score += 5;
-    if (concept.psychology.toLowerCase().includes('shock')) score += 3;
-    if (concept.text_overlay.split(' ').length <= 4) score += 5;
-    return Math.min(score, 99);
-  };
 
   useEffect(() => {
     const checkApiKey = async () => {
