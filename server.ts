@@ -100,15 +100,11 @@ Ensure your image_generation_prompt is detailed and follows the Image Generation
   }
 };
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
-
-  app.use(express.json({ limit: '50mb' }));
+export const app = express();
+app.use(express.json({ limit: '50mb' }));
 
   app.post("/api/thumbnail-concepts", rateLimit(10), async (req, res) => {
     try {
-      const ai = getAI();
       const { idea, niche, stylePreset, layout, palette, imageBase64, likedConcepts } = req.body;
 
       // Input validation
@@ -124,6 +120,8 @@ async function startServer() {
       if (Array.isArray(likedConcepts) && likedConcepts.length > 20) {
         return res.status(400).json({ error: 'Too many liked concepts (max 20).' });
       }
+
+      const ai = getAI();
 
       // Per-niche strategy injected directly into the generation request —
       // gives Gemini specific playbook rules, not just a label.
@@ -418,13 +416,16 @@ async function startServer() {
     }
   });
 
-  if (process.env.NODE_ENV !== "production") {
+
+async function startServer() {
+  const PORT = 3000;
+  if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
+  } else if (process.env.NODE_ENV !== "test") {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
@@ -437,4 +438,6 @@ async function startServer() {
   });
 }
 
-startServer();
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
