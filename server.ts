@@ -68,14 +68,20 @@ const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
   next();
 };
 
-// Cache system instructions — read files once, not on every request
-let cachedSystemInstruction: string | null = null;
-const getSystemInstruction = () => {
-  if (cachedSystemInstruction) return cachedSystemInstruction;
-  try {
-    const skillContent = fs.readFileSync(path.join(process.cwd(), "SKILL.md"), "utf-8");
-    const rulesContent = fs.readFileSync(path.join(process.cwd(), "thumbnail-rules.md"), "utf-8");
-    cachedSystemInstruction = `You are the YouTube Thumbnail Strategist, a World-Class Click Engineer.
+// Cache system instructions — read files once asynchronously, not blocking on every request
+let systemInstructionPromise: Promise<string> | null = null;
+const getSystemInstruction = async (): Promise<string> => {
+  if (systemInstructionPromise) return systemInstructionPromise;
+
+  systemInstructionPromise = Promise.all([
+    fs.promises.readFile(path.join(process.cwd(), "SKILL.md"), "utf-8").catch(() => ""),
+    fs.promises.readFile(path.join(process.cwd(), "thumbnail-rules.md"), "utf-8").catch(() => "")
+  ]).then(([skillContent, rulesContent]) => {
+    if (!skillContent && !rulesContent) {
+      return "You are a YouTube Thumbnail Strategist. Use industry best practices to generate high-CTR thumbnail concepts.";
+    }
+
+    return `You are the YouTube Thumbnail Strategist, a World-Class Click Engineer.
 Your identity, mission, and workflow are defined in the SKILL DEFINITION below.
 Your core strategies are derived from the MASTER LOGIC BLUEPRINT (thumbnail-rules.md).
 
@@ -93,11 +99,12 @@ ${skillContent}
 
 When generating concepts, you MUST strictly follow the Response Template defined in the SKILL DEFINITION.
 Ensure your image_generation_prompt is detailed and follows the Image Generation Guidelines in the SKILL DEFINITION.`;
-    return cachedSystemInstruction;
-  } catch (error) {
+  }).catch((error) => {
     console.error("Error loading instruction files:", error);
     return "You are a YouTube Thumbnail Strategist. Use industry best practices to generate high-CTR thumbnail concepts.";
-  }
+  });
+
+  return systemInstructionPromise;
 };
 
 async function startServer() {
@@ -183,7 +190,7 @@ async function startServer() {
         model: "gemini-2.5-flash",
         contents,
         config: {
-          systemInstruction: getSystemInstruction(),
+          systemInstruction: await getSystemInstruction(),
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -273,7 +280,7 @@ async function startServer() {
         model: "gemini-2.5-flash",
         contents,
         config: {
-          systemInstruction: getSystemInstruction(),
+          systemInstruction: await getSystemInstruction(),
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
