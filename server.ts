@@ -1,3 +1,4 @@
+import rateLimitMiddleware from "express-rate-limit";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
@@ -42,31 +43,16 @@ const sanitizeError = (err: any): string => {
   return msg.replace(/https?:\/\/[^\s]*/g, '[url]').split('\n')[0].slice(0, 300);
 };
 
-// Simple in-memory rate limiter (per IP, sliding window)
-const ipWindows = new Map<string, { count: number; resetAt: number }>();
-
-// Purge expired windows every 5 minutes to prevent unbounded map growth
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, win] of ipWindows) {
-    if (now > win.resetAt) ipWindows.delete(ip);
-  }
-}, 5 * 60_000).unref();
-
-const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
-  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
-  const now = Date.now();
-  const win = ipWindows.get(ip);
-  if (!win || now > win.resetAt) {
-    ipWindows.set(ip, { count: 1, resetAt: now + 60_000 });
-    return next();
-  }
-  if (win.count >= maxPerMinute) {
-    return res.status(429).json({ error: 'Too many requests — please wait a minute before trying again.' });
-  }
-  win.count++;
-  next();
-};
+// Standardized rate limiter using express-rate-limit
+// This avoids spoofable headers by trusting standard Express 'req.ip' behavior.
+// If running behind a reverse proxy (e.g. Render, Heroku), you must configure 'app.set("trust proxy", ...)' appropriately in express.
+const rateLimit = (maxPerMinute: number) => rateLimitMiddleware({
+  windowMs: 60 * 1000, // 1 minute window
+  max: maxPerMinute,
+  message: { error: 'Too many requests — please wait a minute before trying again.' },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
 
 // Cache system instructions — read files once, not on every request
 let cachedSystemInstruction: string | null = null;
@@ -103,6 +89,9 @@ Ensure your image_generation_prompt is detailed and follows the Image Generation
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Trust the first proxy to handle X-Forwarded-For securely if behind a load balancer (like on Render)
+  app.set('trust proxy', 1);
 
   app.use(express.json({ limit: '50mb' }));
 
