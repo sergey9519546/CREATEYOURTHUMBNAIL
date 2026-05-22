@@ -214,18 +214,18 @@ export default function App() {
   // ── localStorage: auto-save on change ───────────────────────────────────
   useEffect(() => {
     if (results) {
-      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch (error) { console.error('Failed to save to localStorage:', error); }
     }
   }, [results]);
 
   useEffect(() => {
-    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch (error) { console.error('Failed to save to localStorage:', error); }
   }, [likedConcepts]);
 
   useEffect(() => {
     if (!input.trim()) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem('cyt_input', input); } catch {}
+      try { localStorage.setItem('cyt_input', input); } catch (error) { console.error('Failed to save to localStorage:', error); }
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
