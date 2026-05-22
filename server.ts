@@ -27,8 +27,15 @@ const getMimeType = (dataUrl: string): string => {
 };
 
 // Scrub internal details before sending errors to the client
-const sanitizeError = (err: any): string => {
-  const msg: string = err?.message || 'Unknown error';
+const sanitizeError = (err: unknown): string => {
+  let msg = 'Unknown error';
+  if (err instanceof Error) {
+    msg = err.message;
+  } else if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
+    msg = (err as any).message;
+  } else if (typeof err === 'string') {
+    msg = err;
+  }
   if (msg.includes('spending cap') || msg.includes('RESOURCE_EXHAUSTED')) {
     return 'Gemini API quota exceeded. Please check your billing settings at console.cloud.google.com.';
   }
@@ -223,10 +230,11 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/thumbnail-concepts:", error);
       const msg = sanitizeError(error);
-      res.status(error.status === 429 ? 429 : 500).json({ error: msg });
+      const isRateLimit = error !== null && typeof error === 'object' && 'status' in error && (error as any).status === 429;
+      res.status(isRateLimit ? 429 : 500).json({ error: msg });
     }
   });
 
@@ -300,7 +308,7 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/refine-concept:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
@@ -412,7 +420,7 @@ async function startServer() {
       const base64 = Buffer.from(imgBuffer).toString('base64');
 
       res.json({ imageUrl: `data:${mimeType};base64,${base64}` });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/generate-image:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
