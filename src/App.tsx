@@ -260,8 +260,8 @@ export default function App() {
 
   const toggleLike = (concept: ThumbnailConcept) => {
     setLikedConcepts(prev => {
-      const exists = prev.find(c => c.concept_name === concept.concept_name);
-      if (exists) return prev.filter(c => c.concept_name !== concept.concept_name);
+      const index = prev.findIndex(c => c.concept_name === concept.concept_name);
+      if (index !== -1) return prev.toSpliced(index, 1);
       return [...prev, concept];
     });
   };
