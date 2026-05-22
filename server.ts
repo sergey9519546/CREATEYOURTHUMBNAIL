@@ -4,10 +4,12 @@ import path from "path";
 import fs from "fs";
 import { config } from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
+import { getMimeType } from "./src/utils/mime.js";
 
 config();
 
 let aiClient: GoogleGenAI | null = null;
+
 
 const getAI = () => {
   if (!aiClient) {
@@ -19,11 +21,6 @@ const getAI = () => {
     aiClient = new GoogleGenAI({ apiKey: apiKey.trim() });
   }
   return aiClient;
-};
-
-const getMimeType = (dataUrl: string): string => {
-  const match = dataUrl.match(/^data:([^;]+);/);
-  return match ? match[1] : 'image/png';
 };
 
 // Scrub internal details before sending errors to the client
