@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { config } from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
+import { fileURLToPath } from "url";
 
 config();
 
@@ -100,9 +101,9 @@ Ensure your image_generation_prompt is detailed and follows the Image Generation
   }
 };
 
-async function startServer() {
+async function createApp() {
   const app = express();
-  const PORT = 3000;
+  app.set('trust proxy', 1);
 
   app.use(express.json({ limit: '50mb' }));
 
@@ -432,9 +433,21 @@ async function startServer() {
     });
   }
 
+
+  return app;
+}
+
+async function startServer() {
+  const app = await createApp();
+  const PORT = 3000;
+
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 
-startServer();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  startServer();
+}
+
+export { createApp };
