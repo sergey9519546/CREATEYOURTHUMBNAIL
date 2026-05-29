@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
+import { ImageEditState } from './types.js';
 
 declare global {
   interface Window {
