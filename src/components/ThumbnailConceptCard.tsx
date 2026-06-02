@@ -125,7 +125,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
     navigator.clipboard.writeText(concept.image_generation_prompt).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    }).catch(() => {});
+    }).catch((e) => { console.warn("Error handling clipboard:", e); });
   };
 
   const isLiked = likedConcepts.some(c => c.concept_name === concept.concept_name);
