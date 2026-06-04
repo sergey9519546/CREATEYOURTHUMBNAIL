@@ -6,6 +6,7 @@ import {
   Ghost, Eye, MousePointerClick, Wand2, Target, Settings
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
+import { getCTRScore } from './utils/ctr.js';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
 
 declare global {
@@ -229,15 +230,7 @@ export default function App() {
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
-
   // ── API key check ────────────────────────────────────────────────────────
-  const getCTRScore = (concept: ThumbnailConcept) => {
-    let score = 85;
-    if (concept.hook.toLowerCase().includes('curiosity')) score += 5;
-    if (concept.psychology.toLowerCase().includes('shock')) score += 3;
-    if (concept.text_overlay.split(' ').length <= 4) score += 5;
-    return Math.min(score, 99);
-  };
 
   useEffect(() => {
     const checkApiKey = async () => {
@@ -1065,7 +1058,6 @@ export default function App() {
                     imageEdits={imageEdits}
                     setImageEdits={setImageEdits}
                     refiningConcepts={refiningConcepts}
-                    getCTRScore={getCTRScore}
                     handleRefine={handleRefine}
                     handleRegenerateImage={handleRegenerateImage}
                     setResults={setResults}

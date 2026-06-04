@@ -1,3 +1,4 @@
+import { getCTRScore } from '../utils/ctr.js';
 import React from 'react';
 import { motion } from 'motion/react';
 import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw, Heart, Send, Wand2, Copy, AlertCircle } from 'lucide-react';
@@ -86,7 +87,6 @@ interface ThumbnailConceptCardProps {
   imageEdits: Record<number, any>;
   setImageEdits: React.Dispatch<React.SetStateAction<Record<number, any>>>;
   refiningConcepts: Record<number, boolean>;
-  getCTRScore: (concept: any) => number;
   handleRefine: (concept: any, feedback?: string) => void;
   handleRegenerateImage: (concept: any) => void;
   setResults: React.Dispatch<React.SetStateAction<any>>;
@@ -100,7 +100,7 @@ interface ThumbnailConceptCardProps {
 
 export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
   concept, idx, mobilePreviewFor, setMobilePreviewFor, imageEdits, setImageEdits,
-  refiningConcepts, getCTRScore, handleRefine, handleRegenerateImage, setResults,
+  refiningConcepts, handleRefine, handleRegenerateImage, setResults,
   toggleLike, likedConcepts, chatInputs, setChatInputs, showRefinementFor, setShowRefinementFor
 }) => {
   const [copied, setCopied] = React.useState(false);
