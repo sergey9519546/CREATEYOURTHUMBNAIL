@@ -6,6 +6,8 @@ import {
   Ghost, Eye, MousePointerClick, Wand2, Target, Settings
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
+import { safeGetLocalStorageItem, safeSetLocalStorageItem, safeRemoveLocalStorageItem } from './utils/storage.js';
+import { getCTRScore } from './utils/ctr.js';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
 
 declare global {
@@ -206,39 +208,29 @@ export default function App() {
 
   // ── localStorage: check for saved session on mount ──────────────────────
   useEffect(() => {
-    try {
-      if (localStorage.getItem('cyt_results')) setShowRestoreBar(true);
-    } catch {}
+    if (safeGetLocalStorageItem('cyt_results')) setShowRestoreBar(true);
   }, []);
 
   // ── localStorage: auto-save on change ───────────────────────────────────
   useEffect(() => {
     if (results) {
-      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+      safeSetLocalStorageItem('cyt_results', JSON.stringify(results));
     }
   }, [results]);
 
   useEffect(() => {
-    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+    safeSetLocalStorageItem('cyt_liked', JSON.stringify(likedConcepts));
   }, [likedConcepts]);
 
   useEffect(() => {
     if (!input.trim()) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem('cyt_input', input); } catch {}
+      safeSetLocalStorageItem('cyt_input', input);
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
 
   // ── API key check ────────────────────────────────────────────────────────
-  const getCTRScore = (concept: ThumbnailConcept) => {
-    let score = 85;
-    if (concept.hook.toLowerCase().includes('curiosity')) score += 5;
-    if (concept.psychology.toLowerCase().includes('shock')) score += 3;
-    if (concept.text_overlay.split(' ').length <= 4) score += 5;
-    return Math.min(score, 99);
-  };
-
   useEffect(() => {
     const checkApiKey = async () => {
       if (window.aistudio && window.aistudio.hasSelectedApiKey) {
@@ -363,7 +355,8 @@ export default function App() {
               : concept.image_generation_prompt;
             const imageUrl = await generateThumbnailImage(prompt, niche, stylePreset, layout, palette, aspectRatio, resolution, base64Image || undefined, saturation);
             return { ...concept, concept_number: newNumber, imageUrl };
-          } catch {
+          } catch (err) {
+            console.warn('Failed to generate extra image:', err);
             return { ...concept, concept_number: newNumber };
           }
         })
@@ -439,7 +432,7 @@ export default function App() {
     setImageEdits({});
     setMobilePreviewFor({});
     setRefiningConcepts({});
-    try { localStorage.removeItem('cyt_results'); } catch {}
+    safeRemoveLocalStorageItem('cyt_results');
   };
 
   // ── Loading screen ───────────────────────────────────────────────────────
@@ -524,7 +517,7 @@ export default function App() {
                         if (saved) { setResults(JSON.parse(saved)); setState('result'); }
                         if (savedLiked) setLikedConcepts(JSON.parse(savedLiked));
                         if (savedInput) setInput(savedInput);
-                      } catch {}
+                      } catch (err) { console.warn('Ignored error:', err); }
                       setShowRestoreBar(false);
                     }}
                     className="px-3 py-1 bg-[var(--color-on-surface)] text-[var(--color-bg)] text-[10px] font-label uppercase neo-border hover:opacity-80 transition-opacity"
@@ -537,7 +530,7 @@ export default function App() {
                         localStorage.removeItem('cyt_results');
                         localStorage.removeItem('cyt_liked');
                         localStorage.removeItem('cyt_input');
-                      } catch {}
+                      } catch (err) { console.warn('Ignored error:', err); }
                       setShowRestoreBar(false);
                     }}
                     className="p-1 opacity-40 hover:opacity-100 transition-opacity"
