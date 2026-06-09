@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
@@ -53,7 +53,7 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
+const rateLimit = (maxPerMinute: number) => (req: Request, res: Response, next: NextFunction) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
   const win = ipWindows.get(ip);
@@ -100,10 +100,11 @@ Ensure your image_generation_prompt is detailed and follows the Image Generation
   }
 };
 
-async function startServer() {
+export async function createServerApp() {
   const app = express();
   const PORT = 3000;
 
+  app.set('trust proxy', 1);
   app.use(express.json({ limit: '50mb' }));
 
   app.post("/api/thumbnail-concepts", rateLimit(10), async (req, res) => {
@@ -223,10 +224,11 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/thumbnail-concepts:", error);
       const msg = sanitizeError(error);
-      res.status(error.status === 429 ? 429 : 500).json({ error: msg });
+      const isRateLimit = typeof error === 'object' && error !== null && 'status' in error && (error as any).status === 429;
+      res.status(isRateLimit ? 429 : 500).json({ error: msg });
     }
   });
 
@@ -300,7 +302,7 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/refine-concept:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
@@ -412,7 +414,7 @@ async function startServer() {
       const base64 = Buffer.from(imgBuffer).toString('base64');
 
       res.json({ imageUrl: `data:${mimeType};base64,${base64}` });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/generate-image:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
@@ -432,9 +434,14 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  return app;
 }
 
-startServer();
+if (process.env.NODE_ENV !== "test") {
+  createServerApp().then(app => {
+    const PORT = 3000;
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  });
+}
