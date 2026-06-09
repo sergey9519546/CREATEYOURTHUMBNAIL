@@ -208,24 +208,24 @@ export default function App() {
   useEffect(() => {
     try {
       if (localStorage.getItem('cyt_results')) setShowRestoreBar(true);
-    } catch {}
+    } catch (e) { console.warn("localStorage error", e); }
   }, []);
 
   // ── localStorage: auto-save on change ───────────────────────────────────
   useEffect(() => {
     if (results) {
-      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch (e) { console.warn("localStorage error", e); }
     }
   }, [results]);
 
   useEffect(() => {
-    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch (e) { console.warn("localStorage error", e); }
   }, [likedConcepts]);
 
   useEffect(() => {
     if (!input.trim()) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem('cyt_input', input); } catch {}
+      try { localStorage.setItem('cyt_input', input); } catch (e) { console.warn("localStorage error", e); }
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
@@ -336,7 +336,7 @@ export default function App() {
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      if (msg.includes("API key not valid")) {
+      if (msg.includes("API key not valid") || msg.toLowerCase().includes("invalid api key")) {
         setError("Invalid API Key. Please check your environment variables.");
       } else if (msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED")) {
         setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota. Please check your billing settings at console.cloud.google.com.");
@@ -363,7 +363,8 @@ export default function App() {
               : concept.image_generation_prompt;
             const imageUrl = await generateThumbnailImage(prompt, niche, stylePreset, layout, palette, aspectRatio, resolution, base64Image || undefined, saturation);
             return { ...concept, concept_number: newNumber, imageUrl };
-          } catch {
+          } catch (e) {
+            console.warn("Image generation failed:", e);
             return { ...concept, concept_number: newNumber };
           }
         })
@@ -439,7 +440,7 @@ export default function App() {
     setImageEdits({});
     setMobilePreviewFor({});
     setRefiningConcepts({});
-    try { localStorage.removeItem('cyt_results'); } catch {}
+    try { localStorage.removeItem('cyt_results'); } catch (e) { console.warn("localStorage error", e); }
   };
 
   // ── Loading screen ───────────────────────────────────────────────────────
@@ -524,7 +525,7 @@ export default function App() {
                         if (saved) { setResults(JSON.parse(saved)); setState('result'); }
                         if (savedLiked) setLikedConcepts(JSON.parse(savedLiked));
                         if (savedInput) setInput(savedInput);
-                      } catch {}
+                      } catch (e) { console.warn("localStorage error", e); }
                       setShowRestoreBar(false);
                     }}
                     className="px-3 py-1 bg-[var(--color-on-surface)] text-[var(--color-bg)] text-[10px] font-label uppercase neo-border hover:opacity-80 transition-opacity"
@@ -537,7 +538,7 @@ export default function App() {
                         localStorage.removeItem('cyt_results');
                         localStorage.removeItem('cyt_liked');
                         localStorage.removeItem('cyt_input');
-                      } catch {}
+                      } catch (e) { console.warn("localStorage error", e); }
                       setShowRestoreBar(false);
                     }}
                     className="p-1 opacity-40 hover:opacity-100 transition-opacity"
