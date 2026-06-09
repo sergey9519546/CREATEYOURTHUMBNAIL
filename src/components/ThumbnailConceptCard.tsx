@@ -177,8 +177,9 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
         </div>
 
         {/* Image */}
-        <div className="relative flex-1 aspect-video bg-[var(--color-surface-container)] group/image">
-          <div className={`w-full h-full transition-all duration-500 ${mobilePreviewFor[concept.concept_number] ? 'scale-[0.15] origin-top-left translate-x-8 translate-y-8 shadow-2xl ring-8 ring-black' : 'scale-100'}`}>
+        <div className="relative flex-1 aspect-video bg-[var(--color-surface-container)] group/image overflow-hidden">
+          {/* Default Image View */}
+          <div className={`absolute inset-0 w-full h-full transition-all duration-500 origin-center ${mobilePreviewFor[concept.concept_number] ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
             {concept.imageUrl ? (
               <img
                 src={concept.imageUrl}
@@ -217,16 +218,74 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
             )}
           </div>
 
-          {mobilePreviewFor[concept.concept_number] && (
-            <div className="absolute inset-0 pointer-events-none flex items-end justify-end p-8">
-              <div className="bg-black/80 text-white px-4 py-2 font-label text-xs uppercase tracking-widest neo-border">
-                Mobile Preview (120x90px)
+          {/* YouTube Mobile Feed Mockup */}
+          <div className={`absolute inset-0 w-full h-full bg-[#0f0f0f] z-10 flex flex-col items-center justify-center font-sans transition-all duration-500 ${mobilePreviewFor[concept.concept_number] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
+            <div className="w-full max-w-[360px] h-full max-h-[640px] bg-[#0f0f0f] flex flex-col relative sm:border-[6px] sm:border-gray-900 sm:rounded-[2rem] sm:my-2 overflow-hidden shadow-2xl font-normal text-white">
+              {/* Status Bar / Header */}
+              <div className="flex justify-between items-center p-3 border-b border-gray-800 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-6 h-4 bg-red-600 rounded-sm flex items-center justify-center">
+                    <div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[5px] border-l-white border-b-[3px] border-b-transparent ml-0.5"></div>
+                  </div>
+                  <span className="font-bold text-sm tracking-tighter" style={{ fontFamily: 'Roboto, Arial, sans-serif' }}>YouTube</span>
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-4 h-4 border-2 border-white rounded-full opacity-80" />
+                  <div className="w-4 h-4 border-2 border-white rounded-full opacity-80" />
+                </div>
+              </div>
+
+              {/* Feed Content */}
+              <div className="flex-1 overflow-y-auto pb-4 custom-scrollbar">
+                {/* The Video Card */}
+                <div className="w-full flex flex-col mt-2">
+                  <div className="relative w-full aspect-video bg-gray-800">
+                    {concept.imageUrl && (
+                      <img
+                        src={concept.imageUrl}
+                        alt={concept.concept_name}
+                        className="w-full h-full object-cover img-sketch-filter"
+                        referrerPolicy="no-referrer"
+                        style={{
+                          filter: `brightness(${100 + (imageEdits[concept.concept_number]?.brightness || 0)}%) contrast(${100 + (imageEdits[concept.concept_number]?.contrast || 0)}%) saturate(${100 + (imageEdits[concept.concept_number]?.saturation || 0)}%)`
+                        }}
+                      />
+                    )}
+                    {/* Timestamp Dead Zone */}
+                    <div className="absolute bottom-1.5 right-1.5 bg-black/90 text-white text-[10px] px-1.5 py-0.5 rounded font-medium tracking-wide">
+                      14:20
+                    </div>
+                  </div>
+                  <div className="flex gap-3 px-3 pt-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 shrink-0 mt-0.5" />
+                    <div className="flex flex-col pr-2">
+                      <h3 className="text-[14px] font-medium leading-snug line-clamp-2" style={{ fontFamily: 'Roboto, Arial, sans-serif' }}>
+                        {concept.concept_name}
+                      </h3>
+                      <p className="text-[12px] text-[#aaaaaa] mt-1 line-clamp-2" style={{ fontFamily: 'Roboto, Arial, sans-serif' }}>
+                        Thumbnail Strategist • 1.2M views • 2 hours ago
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dummy Video Card 2 */}
+                <div className="w-full flex flex-col mt-4 opacity-40">
+                  <div className="relative w-full aspect-video bg-gray-800" />
+                  <div className="flex gap-3 px-3 pt-3">
+                    <div className="w-9 h-9 rounded-full bg-gray-700 shrink-0" />
+                    <div className="flex flex-col w-full gap-2 mt-1">
+                      <div className="h-3.5 bg-gray-700 rounded w-5/6" />
+                      <div className="h-3 bg-gray-800 rounded w-1/2" />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Image overlay buttons (visible on hover) */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover/image:opacity-100 transition-opacity z-20">
+          <div className={`absolute top-4 right-4 flex flex-col gap-2 transition-opacity z-20 ${mobilePreviewFor[concept.concept_number] ? 'opacity-100' : 'opacity-0 group-hover/image:opacity-100'}`}>
             <button
               onClick={() => setMobilePreviewFor(prev => ({ ...prev, [concept.concept_number]: !prev[concept.concept_number] }))}
               className={`p-3 neo-border neo-shadow-button transition-all ${mobilePreviewFor[concept.concept_number] ? 'bg-[var(--color-secondary-yellow)] text-black' : 'bg-white text-black hover:bg-[var(--color-secondary-blue)] hover:text-white'}`}
