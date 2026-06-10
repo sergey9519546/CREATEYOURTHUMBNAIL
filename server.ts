@@ -1,9 +1,10 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import { config } from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
+import { getMimeType, sanitizeError } from "./src/utils/server-helpers.js";
 
 config();
 
@@ -21,27 +22,6 @@ const getAI = () => {
   return aiClient;
 };
 
-const getMimeType = (dataUrl: string): string => {
-  const match = dataUrl.match(/^data:([^;]+);/);
-  return match ? match[1] : 'image/png';
-};
-
-// Scrub internal details before sending errors to the client
-const sanitizeError = (err: any): string => {
-  const msg: string = err?.message || 'Unknown error';
-  if (msg.includes('spending cap') || msg.includes('RESOURCE_EXHAUSTED')) {
-    return 'Gemini API quota exceeded. Please check your billing settings at console.cloud.google.com.';
-  }
-  if (msg.includes('API_KEY_INVALID') || msg.includes('not valid') || msg.includes('API key')) {
-    return 'Invalid API key. Please check your environment configuration.';
-  }
-  if (msg.includes('MINIMAX_API_KEY environment variable')) {
-    return 'Image generation is not configured. MINIMAX_API_KEY is missing.';
-  }
-  // Strip URLs and stack traces, keep first line only, cap length
-  return msg.replace(/https?:\/\/[^\s]*/g, '[url]').split('\n')[0].slice(0, 300);
-};
-
 // Simple in-memory rate limiter (per IP, sliding window)
 const ipWindows = new Map<string, { count: number; resetAt: number }>();
 
@@ -53,8 +33,8 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
-  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
+const rateLimit = (maxPerMinute: number) => (req: Request, res: Response, next: NextFunction) => {
+  const ip = (typeof req.headers['x-forwarded-for'] === 'string' ? req.headers['x-forwarded-for'] : '')?.split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
   const win = ipWindows.get(ip);
   if (!win || now > win.resetAt) {
@@ -104,6 +84,7 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.set('trust proxy', 1);
   app.use(express.json({ limit: '50mb' }));
 
   app.post("/api/thumbnail-concepts", rateLimit(10), async (req, res) => {
@@ -223,10 +204,11 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/thumbnail-concepts:", error);
       const msg = sanitizeError(error);
-      res.status(error.status === 429 ? 429 : 500).json({ error: msg });
+      const isRateLimit = typeof error === 'object' && error !== null && 'status' in error && (error as any).status === 429;
+      res.status(isRateLimit ? 429 : 500).json({ error: msg });
     }
   });
 
@@ -300,7 +282,7 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/refine-concept:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
@@ -412,7 +394,7 @@ async function startServer() {
       const base64 = Buffer.from(imgBuffer).toString('base64');
 
       res.json({ imageUrl: `data:${mimeType};base64,${base64}` });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/generate-image:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
