@@ -5,7 +5,9 @@ import {
   Gamepad2, TrendingUp, BookOpen, Film, Laptop, Mountain, Video, Box, Sparkles, Globe, Coffee, Palette, X, Heart, LayoutTemplate, Trash2,
   Ghost, Eye, MousePointerClick, Wand2, Target, Settings
 } from 'lucide-react';
-import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
+import { getThumbnailConcepts, generateThumbnailImage, refineConcept } from './services/gemini';
+import { StrategistResponse, ThumbnailConcept, ImageEditState } from './types.js';
+import { getCTRScore } from './utils/scoring.js';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
 
 declare global {
@@ -231,13 +233,7 @@ export default function App() {
   }, [input]);
 
   // ── API key check ────────────────────────────────────────────────────────
-  const getCTRScore = (concept: ThumbnailConcept) => {
-    let score = 85;
-    if (concept.hook.toLowerCase().includes('curiosity')) score += 5;
-    if (concept.psychology.toLowerCase().includes('shock')) score += 3;
-    if (concept.text_overlay.split(' ').length <= 4) score += 5;
-    return Math.min(score, 99);
-  };
+
 
   useEffect(() => {
     const checkApiKey = async () => {
