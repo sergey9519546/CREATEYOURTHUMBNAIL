@@ -100,9 +100,9 @@ Ensure your image_generation_prompt is detailed and follows the Image Generation
   }
 };
 
-async function startServer() {
+export async function createServerApp() {
   const app = express();
-  const PORT = 3000;
+  app.set('trust proxy', 1);
 
   app.use(express.json({ limit: '50mb' }));
 
@@ -432,9 +432,16 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  return app;
 }
 
-startServer();
+if (process.env.NODE_ENV !== "test") {
+  const PORT = process.env.PORT || 3000;
+  createServerApp().then(app => {
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }).catch(err => {
+    console.error("Failed to start server:", err);
+  });
+}
