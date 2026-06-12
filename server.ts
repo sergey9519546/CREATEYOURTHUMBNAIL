@@ -4,6 +4,8 @@ import path from "path";
 import fs from "fs";
 import { config } from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
+import { sanitizeError } from "./src/utils/error.js";
+import { getMimeType } from "./src/utils/image.js";
 
 config();
 
@@ -19,27 +21,6 @@ const getAI = () => {
     aiClient = new GoogleGenAI({ apiKey: apiKey.trim() });
   }
   return aiClient;
-};
-
-const getMimeType = (dataUrl: string): string => {
-  const match = dataUrl.match(/^data:([^;]+);/);
-  return match ? match[1] : 'image/png';
-};
-
-// Scrub internal details before sending errors to the client
-const sanitizeError = (err: any): string => {
-  const msg: string = err?.message || 'Unknown error';
-  if (msg.includes('spending cap') || msg.includes('RESOURCE_EXHAUSTED')) {
-    return 'Gemini API quota exceeded. Please check your billing settings at console.cloud.google.com.';
-  }
-  if (msg.includes('API_KEY_INVALID') || msg.includes('not valid') || msg.includes('API key')) {
-    return 'Invalid API key. Please check your environment configuration.';
-  }
-  if (msg.includes('MINIMAX_API_KEY environment variable')) {
-    return 'Image generation is not configured. MINIMAX_API_KEY is missing.';
-  }
-  // Strip URLs and stack traces, keep first line only, cap length
-  return msg.replace(/https?:\/\/[^\s]*/g, '[url]').split('\n')[0].slice(0, 300);
 };
 
 // Simple in-memory rate limiter (per IP, sliding window)
@@ -104,6 +85,7 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.set('trust proxy', 1);
   app.use(express.json({ limit: '50mb' }));
 
   app.post("/api/thumbnail-concepts", rateLimit(10), async (req, res) => {
@@ -223,10 +205,11 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/thumbnail-concepts:", error);
       const msg = sanitizeError(error);
-      res.status(error.status === 429 ? 429 : 500).json({ error: msg });
+      const statusCode = typeof error === 'object' && error !== null && 'status' in error && error.status === 429 ? 429 : 500;
+      res.status(statusCode).json({ error: msg });
     }
   });
 
@@ -300,7 +283,7 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/refine-concept:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
@@ -412,7 +395,7 @@ async function startServer() {
       const base64 = Buffer.from(imgBuffer).toString('base64');
 
       res.json({ imageUrl: `data:${mimeType};base64,${base64}` });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/generate-image:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
