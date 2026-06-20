@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
@@ -53,7 +53,7 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
+const rateLimit = (maxPerMinute: number) => (req: Request, res: Response, next: NextFunction) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
   const win = ipWindows.get(ip);
@@ -104,6 +104,7 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.set('trust proxy', 1);
   app.use(express.json({ limit: '50mb' }));
 
   app.post("/api/thumbnail-concepts", rateLimit(10), async (req, res) => {
