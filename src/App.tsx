@@ -5,8 +5,10 @@ import {
   Gamepad2, TrendingUp, BookOpen, Film, Laptop, Mountain, Video, Box, Sparkles, Globe, Coffee, Palette, X, Heart, LayoutTemplate, Trash2,
   Ghost, Eye, MousePointerClick, Wand2, Target, Settings
 } from 'lucide-react';
-import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
+import { getThumbnailConcepts, generateThumbnailImage, refineConcept } from './services/gemini';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
+import { safeStorage } from './utils/storage.js';
+import { StrategistResponse, ThumbnailConcept, ImageEditState } from './types.js';
 
 declare global {
   interface Window {
@@ -206,39 +208,29 @@ export default function App() {
 
   // ── localStorage: check for saved session on mount ──────────────────────
   useEffect(() => {
-    try {
-      if (localStorage.getItem('cyt_results')) setShowRestoreBar(true);
-    } catch {}
+    if (safeStorage.getItem('cyt_results')) setShowRestoreBar(true);
   }, []);
 
   // ── localStorage: auto-save on change ───────────────────────────────────
   useEffect(() => {
     if (results) {
-      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+      safeStorage.setItem('cyt_results', JSON.stringify(results));
     }
   }, [results]);
 
   useEffect(() => {
-    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+    safeStorage.setItem('cyt_liked', JSON.stringify(likedConcepts));
   }, [likedConcepts]);
 
   useEffect(() => {
     if (!input.trim()) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem('cyt_input', input); } catch {}
+      safeStorage.setItem('cyt_input', input);
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
 
   // ── API key check ────────────────────────────────────────────────────────
-  const getCTRScore = (concept: ThumbnailConcept) => {
-    let score = 85;
-    if (concept.hook.toLowerCase().includes('curiosity')) score += 5;
-    if (concept.psychology.toLowerCase().includes('shock')) score += 3;
-    if (concept.text_overlay.split(' ').length <= 4) score += 5;
-    return Math.min(score, 99);
-  };
-
   useEffect(() => {
     const checkApiKey = async () => {
       if (window.aistudio && window.aistudio.hasSelectedApiKey) {
@@ -439,7 +431,7 @@ export default function App() {
     setImageEdits({});
     setMobilePreviewFor({});
     setRefiningConcepts({});
-    try { localStorage.removeItem('cyt_results'); } catch {}
+    safeStorage.removeItem('cyt_results');
   };
 
   // ── Loading screen ───────────────────────────────────────────────────────
@@ -518,13 +510,15 @@ export default function App() {
                   <button
                     onClick={() => {
                       try {
-                        const saved = localStorage.getItem('cyt_results');
-                        const savedLiked = localStorage.getItem('cyt_liked');
-                        const savedInput = localStorage.getItem('cyt_input');
+                        const saved = safeStorage.getItem('cyt_results');
+                        const savedLiked = safeStorage.getItem('cyt_liked');
+                        const savedInput = safeStorage.getItem('cyt_input');
                         if (saved) { setResults(JSON.parse(saved)); setState('result'); }
                         if (savedLiked) setLikedConcepts(JSON.parse(savedLiked));
                         if (savedInput) setInput(savedInput);
-                      } catch {}
+                      } catch (error) {
+                        console.warn("Failed to parse saved session", error);
+                      }
                       setShowRestoreBar(false);
                     }}
                     className="px-3 py-1 bg-[var(--color-on-surface)] text-[var(--color-bg)] text-[10px] font-label uppercase neo-border hover:opacity-80 transition-opacity"
@@ -533,11 +527,9 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => {
-                      try {
-                        localStorage.removeItem('cyt_results');
-                        localStorage.removeItem('cyt_liked');
-                        localStorage.removeItem('cyt_input');
-                      } catch {}
+                      safeStorage.removeItem('cyt_results');
+                      safeStorage.removeItem('cyt_liked');
+                      safeStorage.removeItem('cyt_input');
                       setShowRestoreBar(false);
                     }}
                     className="p-1 opacity-40 hover:opacity-100 transition-opacity"
@@ -1062,10 +1054,9 @@ export default function App() {
                     idx={idx}
                     mobilePreviewFor={mobilePreviewFor}
                     setMobilePreviewFor={setMobilePreviewFor}
-                    imageEdits={imageEdits}
-                    setImageEdits={setImageEdits}
+                    imageEdits={imageEdits as Record<number, ImageEditState>}
+                    setImageEdits={setImageEdits as React.Dispatch<React.SetStateAction<Record<number, ImageEditState>>>}
                     refiningConcepts={refiningConcepts}
-                    getCTRScore={getCTRScore}
                     handleRefine={handleRefine}
                     handleRegenerateImage={handleRegenerateImage}
                     setResults={setResults}
