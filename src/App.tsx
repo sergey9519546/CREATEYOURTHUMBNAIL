@@ -5,7 +5,8 @@ import {
   Gamepad2, TrendingUp, BookOpen, Film, Laptop, Mountain, Video, Box, Sparkles, Globe, Coffee, Palette, X, Heart, LayoutTemplate, Trash2,
   Ghost, Eye, MousePointerClick, Wand2, Target, Settings
 } from 'lucide-react';
-import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
+import { getThumbnailConcepts, generateThumbnailImage, refineConcept } from './services/gemini';
+import { StrategistResponse, ThumbnailConcept } from './types.js';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
 
 declare global {
