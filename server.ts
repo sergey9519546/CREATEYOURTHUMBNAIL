@@ -147,7 +147,7 @@ async function startServer() {
         'Tutorial':     'Numbered step indicators or before/after split framing. Clean organized grid layout. Directional arrows and callouts. Subject visibly demonstrates the result. Warm approachable lighting.',
       };
 
-      const contents: any[] = [
+      const contents: (string | { inlineData: { mimeType: string, data: string } })[] = [
         `Video Idea/Title: ${idea}`,
         `Target Niche: ${niche || 'General'}`,
         `Visual Style: ${stylePreset || 'Adventure'}`,
@@ -223,10 +223,10 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/thumbnail-concepts:", error);
       const msg = sanitizeError(error);
-      res.status(error.status === 429 ? 429 : 500).json({ error: msg });
+      res.status((error as any).status === 429 ? 429 : 500).json({ error: msg });
     }
   });
 
@@ -300,7 +300,7 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/refine-concept:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
@@ -412,7 +412,7 @@ async function startServer() {
       const base64 = Buffer.from(imgBuffer).toString('base64');
 
       res.json({ imageUrl: `data:${mimeType};base64,${base64}` });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/generate-image:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
