@@ -1,0 +1,29 @@
+I will perform the Daily Apex Project Upgrade Task.
+
+**1. REPOSITORY ORIENTATION & AUDIT:**
+The project is "CreateYourThumbnail", an AI-powered YouTube thumbnail concept generator using React, Vite, Tailwind CSS v4, and Express (with `@google/genai` and `minimax`).
+- Core logic handles generating ideas and producing image prompts using Gemini, and generating images using Minimax.
+- It has an Express backend (`server.ts`) inside the Vite project.
+- UX provides an interactive, detailed process for user feedback.
+- **Code Quality:** There are some direct `localStorage` usages inside `src/App.tsx` wrapped in individual `try/catch` blocks which can be abstracted. `src/services/gemini.ts` has types exported that could be isolated. There are NO test files inside the project (`src/`).
+
+**2. INNOVATION WINDOW:**
+- *Project Identity Read:* A professional AI-native product for content creators to brainstorm and visualize YouTube thumbnails safely and efficiently.
+- *Elevation Opportunities:*
+  1. Safe `localStorage` utility abstracting native web API.
+  2. Implement tests for the first time in `src/utils/storage.test.ts`.
+  3. Extract core types from `services/gemini.ts` to `src/types.ts`.
+  4. Fix tests to run correctly using `node:test` runner as the project is a Node project and we can add a test script `npx tsx --test src/**/*.test.ts`.
+
+**3. PRIORITIZATION:**
+I will prioritize creating a safe, centralized `localStorage` abstraction to improve resilience to incognito/quota errors, extracting and exporting types, and introducing the *first testing framework* for this repository.
+
+**4. PLAN:**
+1. Extract type definitions to `src/types.ts` and update `src/services/gemini.ts` to re-export and use them.
+2. Create `src/utils/storage.ts` with a `safeStorage` wrapper.
+3. Create `src/utils/storage.test.ts` to test `safeStorage`.
+4. Refactor `src/App.tsx` to use `safeStorage` instead of native `localStorage`.
+5. Update `package.json` to include `"test": "tsx --test src/**/*.test.ts"`.
+6. Run testing and verification commands.
+7. Complete pre-commit steps.
+8. Submit.
