@@ -100,13 +100,13 @@ Ensure your image_generation_prompt is detailed and follows the Image Generation
   }
 };
 
-async function startServer() {
+export async function createServerApp() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json({ limit: '50mb' }));
 
-  app.post("/api/thumbnail-concepts", rateLimit(10), async (req, res) => {
+  app.post("/api/thumbnail-concepts", rateLimit(10), async (req: express.Request, res: express.Response) => {
     try {
       const ai = getAI();
       const { idea, niche, stylePreset, layout, palette, imageBase64, likedConcepts } = req.body;
@@ -230,7 +230,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/refine-concept", rateLimit(20), async (req, res) => {
+  app.post("/api/refine-concept", rateLimit(20), async (req: express.Request, res: express.Response) => {
     try {
       const ai = getAI();
       const { originalConcept, feedback, compositeReferences, imageBase64 } = req.body;
@@ -306,7 +306,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/generate-image", rateLimit(15), async (req, res) => {
+  app.post("/api/generate-image", rateLimit(15), async (req: express.Request, res: express.Response) => {
     try {
       const { prompt, niche, stylePreset, layout, palette, aspectRatio, saturation } = req.body;
 
@@ -432,9 +432,14 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  return app;
 }
 
-startServer();
+if (process.env.NODE_ENV !== 'test') {
+  createServerApp().then(app => {
+    const PORT = 3000;
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  });
+}
