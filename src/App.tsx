@@ -7,6 +7,9 @@ import {
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
+import { isQuotaError } from './utils/errors';
+import { getCTRScore } from './utils/scoring';
+import { ImageEditState } from './types';
 
 declare global {
   interface Window {
@@ -191,14 +194,7 @@ export default function App() {
   const [likedConcepts, setLikedConcepts] = useState<ThumbnailConcept[]>([]);
   const [selectedCompositeReferences, setSelectedCompositeReferences] = useState<Record<number, ThumbnailConcept[]>>({});
   const [mobilePreviewFor, setMobilePreviewFor] = useState<Record<number, boolean>>({});
-  const [imageEdits, setImageEdits] = useState<Record<number, {
-    brightness: number,
-    contrast: number,
-    saturation: number,
-    subjectSize: number,
-    textPosition: 'top' | 'center' | 'bottom',
-    emphasis: 'subject' | 'text' | 'balanced'
-  }>>({});
+  const [imageEdits, setImageEdits] = useState<Record<number, ImageEditState>>({});
 
   // UX state
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
@@ -231,14 +227,6 @@ export default function App() {
   }, [input]);
 
   // ── API key check ────────────────────────────────────────────────────────
-  const getCTRScore = (concept: ThumbnailConcept) => {
-    let score = 85;
-    if (concept.hook.toLowerCase().includes('curiosity')) score += 5;
-    if (concept.psychology.toLowerCase().includes('shock')) score += 3;
-    if (concept.text_overlay.split(' ').length <= 4) score += 5;
-    return Math.min(score, 99);
-  };
-
   useEffect(() => {
     const checkApiKey = async () => {
       if (window.aistudio && window.aistudio.hasSelectedApiKey) {
@@ -336,9 +324,9 @@ export default function App() {
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      if (msg.includes("API key not valid")) {
+      if (msg.includes("Invalid API key") || msg.includes("API key not valid")) {
         setError("Invalid API Key. Please check your environment variables.");
-      } else if (msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED")) {
+      } else if (isQuotaError(msg)) {
         setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota. Please check your billing settings at console.cloud.google.com.");
       } else {
         setError(`Failed to generate concepts: ${msg}`);
@@ -420,8 +408,8 @@ export default function App() {
     } catch (err) {
       console.error('Failed to refine concept', err);
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      if (msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED")) {
-        setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota.");
+      if (isQuotaError(msg)) {
+        setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota. Please check your billing settings at console.cloud.google.com.");
       } else {
         setError(`Failed to refine Concept ${concept.concept_number}: ${msg}`);
       }
@@ -568,7 +556,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  {(error.includes("spending cap") || error.includes("Quota Exceeded")) && (
+                  {isQuotaError(error) && (
                     <div className="flex items-center gap-2">
                       <a
                         href="https://console.cloud.google.com/billing"
