@@ -1,0 +1,7 @@
+export const isQuotaError = (msg: string): boolean => {
+  return msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("Quota Exceeded");
+};
+
+export const isAuthError = (msg: string): boolean => {
+  return msg.includes("API key not valid") || msg.includes("API_KEY_INVALID") || msg.includes("not valid") || msg.includes("API key");
+};
