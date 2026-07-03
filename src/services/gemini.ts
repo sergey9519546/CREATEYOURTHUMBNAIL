@@ -1,3 +1,4 @@
+import { isQuotaError } from '../utils/errors';
 export interface ThumbnailConcept {
   concept_number: number;
   concept_name: string;
@@ -74,7 +75,7 @@ async function handleGeminiError(response: Response): Promise<Error> {
   const errorData = await response.json();
   const errorMessage = errorData.error || "An unknown error occurred";
   
-  if (errorMessage.includes("spending cap") || errorMessage.includes("RESOURCE_EXHAUSTED")) {
+  if (isQuotaError(errorMessage)) {
     return new Error("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota. Please check your billing settings at console.cloud.google.com.");
   }
   return new Error(errorMessage);
