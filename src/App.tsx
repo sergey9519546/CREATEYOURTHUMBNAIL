@@ -5,7 +5,11 @@ import {
   Gamepad2, TrendingUp, BookOpen, Film, Laptop, Mountain, Video, Box, Sparkles, Globe, Coffee, Palette, X, Heart, LayoutTemplate, Trash2,
   Ghost, Eye, MousePointerClick, Wand2, Target, Settings
 } from 'lucide-react';
-import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
+import { getThumbnailConcepts, generateThumbnailImage, refineConcept } from './services/gemini';
+import { StrategistResponse, ThumbnailConcept, ImageEditState } from './types';
+import { safeStorage } from './utils/storage';
+import { getCTRScore } from './utils/scoring';
+import { isQuotaError, isAuthError } from './utils/errors';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
 
 declare global {
@@ -191,14 +195,7 @@ export default function App() {
   const [likedConcepts, setLikedConcepts] = useState<ThumbnailConcept[]>([]);
   const [selectedCompositeReferences, setSelectedCompositeReferences] = useState<Record<number, ThumbnailConcept[]>>({});
   const [mobilePreviewFor, setMobilePreviewFor] = useState<Record<number, boolean>>({});
-  const [imageEdits, setImageEdits] = useState<Record<number, {
-    brightness: number,
-    contrast: number,
-    saturation: number,
-    subjectSize: number,
-    textPosition: 'top' | 'center' | 'bottom',
-    emphasis: 'subject' | 'text' | 'balanced'
-  }>>({});
+  const [imageEdits, setImageEdits] = useState<Record<number, ImageEditState>>({});
 
   // UX state
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
@@ -206,38 +203,30 @@ export default function App() {
 
   // ── localStorage: check for saved session on mount ──────────────────────
   useEffect(() => {
-    try {
-      if (localStorage.getItem('cyt_results')) setShowRestoreBar(true);
-    } catch {}
+    if (safeStorage.getItem('cyt_results')) setShowRestoreBar(true);
   }, []);
 
   // ── localStorage: auto-save on change ───────────────────────────────────
   useEffect(() => {
     if (results) {
-      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+      try { safeStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
     }
   }, [results]);
 
   useEffect(() => {
-    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+    try { safeStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
   }, [likedConcepts]);
 
   useEffect(() => {
     if (!input.trim()) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem('cyt_input', input); } catch {}
+      safeStorage.setItem('cyt_input', input);
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
 
   // ── API key check ────────────────────────────────────────────────────────
-  const getCTRScore = (concept: ThumbnailConcept) => {
-    let score = 85;
-    if (concept.hook.toLowerCase().includes('curiosity')) score += 5;
-    if (concept.psychology.toLowerCase().includes('shock')) score += 3;
-    if (concept.text_overlay.split(' ').length <= 4) score += 5;
-    return Math.min(score, 99);
-  };
+
 
   useEffect(() => {
     const checkApiKey = async () => {
@@ -336,9 +325,9 @@ export default function App() {
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      if (msg.includes("API key not valid")) {
+      if (isAuthError(msg)) {
         setError("Invalid API Key. Please check your environment variables.");
-      } else if (msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED")) {
+      } else if (isQuotaError(msg)) {
         setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota. Please check your billing settings at console.cloud.google.com.");
       } else {
         setError(`Failed to generate concepts: ${msg}`);
@@ -420,7 +409,7 @@ export default function App() {
     } catch (err) {
       console.error('Failed to refine concept', err);
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      if (msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED")) {
+      if (isQuotaError(msg)) {
         setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota.");
       } else {
         setError(`Failed to refine Concept ${concept.concept_number}: ${msg}`);
@@ -439,7 +428,7 @@ export default function App() {
     setImageEdits({});
     setMobilePreviewFor({});
     setRefiningConcepts({});
-    try { localStorage.removeItem('cyt_results'); } catch {}
+    safeStorage.removeItem('cyt_results');
   };
 
   // ── Loading screen ───────────────────────────────────────────────────────
@@ -518,9 +507,9 @@ export default function App() {
                   <button
                     onClick={() => {
                       try {
-                        const saved = localStorage.getItem('cyt_results');
-                        const savedLiked = localStorage.getItem('cyt_liked');
-                        const savedInput = localStorage.getItem('cyt_input');
+                        const saved = safeStorage.getItem('cyt_results');
+                        const savedLiked = safeStorage.getItem('cyt_liked');
+                        const savedInput = safeStorage.getItem('cyt_input');
                         if (saved) { setResults(JSON.parse(saved)); setState('result'); }
                         if (savedLiked) setLikedConcepts(JSON.parse(savedLiked));
                         if (savedInput) setInput(savedInput);
@@ -534,9 +523,9 @@ export default function App() {
                   <button
                     onClick={() => {
                       try {
-                        localStorage.removeItem('cyt_results');
-                        localStorage.removeItem('cyt_liked');
-                        localStorage.removeItem('cyt_input');
+                        safeStorage.removeItem('cyt_results');
+                        safeStorage.removeItem('cyt_liked');
+                        safeStorage.removeItem('cyt_input');
                       } catch {}
                       setShowRestoreBar(false);
                     }}
@@ -568,7 +557,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  {(error.includes("spending cap") || error.includes("Quota Exceeded")) && (
+                  {isQuotaError(error) && (
                     <div className="flex items-center gap-2">
                       <a
                         href="https://console.cloud.google.com/billing"
