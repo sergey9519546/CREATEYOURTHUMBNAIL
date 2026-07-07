@@ -968,7 +968,7 @@ export default function App() {
                     <Wand2 className="w-10 h-10 text-[var(--color-on-primary)]" />
                   </motion.div>
                   <h2 className="text-4xl font-headline font-bold text-[var(--color-on-surface)] uppercase tracking-tighter">
-                    Strategist is Cooking...
+                    Engineering High-CTR Concepts...
                   </h2>
                   <p className="text-xl font-body text-[var(--color-on-surface)]/70 mt-2">
                     Packaging your next viral hit.
