@@ -4,6 +4,8 @@ import path from "path";
 import fs from "fs";
 import { config } from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
+import { isQuotaError, isAuthError } from './src/utils/errors';
+
 
 config();
 
@@ -29,10 +31,10 @@ const getMimeType = (dataUrl: string): string => {
 // Scrub internal details before sending errors to the client
 const sanitizeError = (err: any): string => {
   const msg: string = err?.message || 'Unknown error';
-  if (msg.includes('spending cap') || msg.includes('RESOURCE_EXHAUSTED')) {
+  if (isQuotaError(msg)) {
     return 'Gemini API quota exceeded. Please check your billing settings at console.cloud.google.com.';
   }
-  if (msg.includes('API_KEY_INVALID') || msg.includes('not valid') || msg.includes('API key')) {
+  if (isAuthError(msg)) {
     return 'Invalid API key. Please check your environment configuration.';
   }
   if (msg.includes('MINIMAX_API_KEY environment variable')) {
