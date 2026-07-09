@@ -1,3 +1,5 @@
+import { isAuthError, isQuotaError, getErrorMessage } from './utils/errors';
+import { safeStorage } from './utils/storage';
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -206,26 +208,24 @@ export default function App() {
 
   // ── localStorage: check for saved session on mount ──────────────────────
   useEffect(() => {
-    try {
-      if (localStorage.getItem('cyt_results')) setShowRestoreBar(true);
-    } catch {}
+    if (safeStorage.getItem('cyt_results')) setShowRestoreBar(true);
   }, []);
 
   // ── localStorage: auto-save on change ───────────────────────────────────
   useEffect(() => {
     if (results) {
-      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+      safeStorage.setItem('cyt_results', JSON.stringify(results));
     }
   }, [results]);
 
   useEffect(() => {
-    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+    safeStorage.setItem('cyt_liked', JSON.stringify(likedConcepts));
   }, [likedConcepts]);
 
   useEffect(() => {
     if (!input.trim()) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem('cyt_input', input); } catch {}
+      safeStorage.setItem('cyt_input', input);
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
@@ -335,11 +335,11 @@ export default function App() {
       setState('result');
     } catch (err) {
       console.error(err);
-      const msg = err instanceof Error ? err.message : 'Unknown error';
-      if (msg.includes("API key not valid")) {
-        setError("Invalid API Key. Please check your environment variables.");
-      } else if (msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED")) {
-        setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota. Please check your billing settings at console.cloud.google.com.");
+      const msg = getErrorMessage(err);
+      if (isAuthError(err)) {
+        setError('Invalid API Key. Please check your environment variables.');
+      } else if (isQuotaError(err)) {
+        setError('Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota. Please check your billing settings at console.cloud.google.com.');
       } else {
         setError(`Failed to generate concepts: ${msg}`);
       }
@@ -419,9 +419,9 @@ export default function App() {
       setShowRefinementFor(prev => ({ ...prev, [concept.concept_number]: false }));
     } catch (err) {
       console.error('Failed to refine concept', err);
-      const msg = err instanceof Error ? err.message : 'Unknown error';
-      if (msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED")) {
-        setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota.");
+      const msg = getErrorMessage(err);
+      if (isQuotaError(err)) {
+        setError('Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota.');
       } else {
         setError(`Failed to refine Concept ${concept.concept_number}: ${msg}`);
       }
@@ -439,7 +439,7 @@ export default function App() {
     setImageEdits({});
     setMobilePreviewFor({});
     setRefiningConcepts({});
-    try { localStorage.removeItem('cyt_results'); } catch {}
+    safeStorage.removeItem('cyt_results');
   };
 
   // ── Loading screen ───────────────────────────────────────────────────────
@@ -517,14 +517,12 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      try {
-                        const saved = localStorage.getItem('cyt_results');
-                        const savedLiked = localStorage.getItem('cyt_liked');
-                        const savedInput = localStorage.getItem('cyt_input');
-                        if (saved) { setResults(JSON.parse(saved)); setState('result'); }
-                        if (savedLiked) setLikedConcepts(JSON.parse(savedLiked));
+                      const saved = safeStorage.getItem('cyt_results');
+                        const savedLiked = safeStorage.getItem('cyt_liked');
+                        const savedInput = safeStorage.getItem('cyt_input');
+                        if (saved) { try { setResults(JSON.parse(saved)); setState('result'); } catch {} }
+                        if (savedLiked) { try { setLikedConcepts(JSON.parse(savedLiked)); } catch {} }
                         if (savedInput) setInput(savedInput);
-                      } catch {}
                       setShowRestoreBar(false);
                     }}
                     className="px-3 py-1 bg-[var(--color-on-surface)] text-[var(--color-bg)] text-[10px] font-label uppercase neo-border hover:opacity-80 transition-opacity"
@@ -533,11 +531,9 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => {
-                      try {
-                        localStorage.removeItem('cyt_results');
-                        localStorage.removeItem('cyt_liked');
-                        localStorage.removeItem('cyt_input');
-                      } catch {}
+                      safeStorage.removeItem('cyt_results');
+                        safeStorage.removeItem('cyt_liked');
+                        safeStorage.removeItem('cyt_input');
                       setShowRestoreBar(false);
                     }}
                     className="p-1 opacity-40 hover:opacity-100 transition-opacity"
