@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type Request, type Response, type NextFunction } from 'express';
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
@@ -27,8 +27,10 @@ const getMimeType = (dataUrl: string): string => {
 };
 
 // Scrub internal details before sending errors to the client
-const sanitizeError = (err: any): string => {
-  const msg: string = err?.message || 'Unknown error';
+const sanitizeError = (err: unknown): string => {
+  const errObj = err as Record<string, unknown>;
+  const msg: string = (typeof errObj?.message === 'string' ? errObj.message : 'Unknown error');
+
   if (msg.includes('spending cap') || msg.includes('RESOURCE_EXHAUSTED')) {
     return 'Gemini API quota exceeded. Please check your billing settings at console.cloud.google.com.';
   }
@@ -53,7 +55,7 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
+const rateLimit = (maxPerMinute: number) => (req: Request, res: Response, next: NextFunction) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
   const win = ipWindows.get(ip);
