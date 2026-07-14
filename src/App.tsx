@@ -7,6 +7,9 @@ import {
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
+import { safeStorage } from './utils/storage';
+import { type ImageEditState } from './types';
+import { isQuotaError, isAuthError } from './utils/errors';
 
 declare global {
   interface Window {
@@ -191,14 +194,7 @@ export default function App() {
   const [likedConcepts, setLikedConcepts] = useState<ThumbnailConcept[]>([]);
   const [selectedCompositeReferences, setSelectedCompositeReferences] = useState<Record<number, ThumbnailConcept[]>>({});
   const [mobilePreviewFor, setMobilePreviewFor] = useState<Record<number, boolean>>({});
-  const [imageEdits, setImageEdits] = useState<Record<number, {
-    brightness: number,
-    contrast: number,
-    saturation: number,
-    subjectSize: number,
-    textPosition: 'top' | 'center' | 'bottom',
-    emphasis: 'subject' | 'text' | 'balanced'
-  }>>({});
+  const [imageEdits, setImageEdits] = useState<Record<number, ImageEditState>>({});
 
   // UX state
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
@@ -206,26 +202,24 @@ export default function App() {
 
   // ── localStorage: check for saved session on mount ──────────────────────
   useEffect(() => {
-    try {
-      if (localStorage.getItem('cyt_results')) setShowRestoreBar(true);
-    } catch {}
+    if (safeStorage.getItem('cyt_results')) setShowRestoreBar(true);
   }, []);
 
   // ── localStorage: auto-save on change ───────────────────────────────────
   useEffect(() => {
     if (results) {
-      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+      safeStorage.setItem('cyt_results', JSON.stringify(results));
     }
   }, [results]);
 
   useEffect(() => {
-    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+    safeStorage.setItem('cyt_liked', JSON.stringify(likedConcepts));
   }, [likedConcepts]);
 
   useEffect(() => {
     if (!input.trim()) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem('cyt_input', input); } catch {}
+      safeStorage.setItem('cyt_input', input);
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
@@ -318,7 +312,7 @@ export default function App() {
               : concept.image_generation_prompt;
             const imageUrl = await generateThumbnailImage(prompt, niche, stylePreset, layout, palette, aspectRatio, resolution, base64Image || undefined, saturation);
             return { ...concept, imageUrl };
-          } catch (err) {
+          } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Unknown error';
             imageErrors.push(`Concept ${concept.concept_number}: ${msg}`);
             if (msg.includes('Requested entity was not found')) setHasKey(false);
@@ -333,12 +327,12 @@ export default function App() {
 
       setResults({ ...concepts, thumbnails: updatedThumbnails });
       setState('result');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      if (msg.includes("API key not valid")) {
+      if (isAuthError(msg)) {
         setError("Invalid API Key. Please check your environment variables.");
-      } else if (msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED")) {
+      } else if (isQuotaError(msg)) {
         setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota. Please check your billing settings at console.cloud.google.com.");
       } else {
         setError(`Failed to generate concepts: ${msg}`);
@@ -363,13 +357,13 @@ export default function App() {
               : concept.image_generation_prompt;
             const imageUrl = await generateThumbnailImage(prompt, niche, stylePreset, layout, palette, aspectRatio, resolution, base64Image || undefined, saturation);
             return { ...concept, concept_number: newNumber, imageUrl };
-          } catch {
+          } catch (err: unknown) {
             return { ...concept, concept_number: newNumber };
           }
         })
       );
       setResults(prev => prev ? { ...prev, thumbnails: [...prev.thumbnails, ...withImages] } : prev);
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to generate more concepts');
     } finally {
       setIsGeneratingMore(false);
@@ -388,7 +382,7 @@ export default function App() {
         ...prev,
         thumbnails: prev.thumbnails.map(t => t.concept_number === concept.concept_number ? { ...t, imageUrl } : t)
       } : prev);
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Image regeneration failed');
     } finally {
       setRefiningConcepts(prev => ({ ...prev, [concept.concept_number]: false }));
@@ -417,10 +411,10 @@ export default function App() {
       });
       setChatInputs(prev => ({ ...prev, [concept.concept_number]: '' }));
       setShowRefinementFor(prev => ({ ...prev, [concept.concept_number]: false }));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to refine concept', err);
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      if (msg.includes("spending cap") || msg.includes("RESOURCE_EXHAUSTED")) {
+      if (isQuotaError(msg)) {
         setError("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota.");
       } else {
         setError(`Failed to refine Concept ${concept.concept_number}: ${msg}`);
@@ -439,7 +433,7 @@ export default function App() {
     setImageEdits({});
     setMobilePreviewFor({});
     setRefiningConcepts({});
-    try { localStorage.removeItem('cyt_results'); } catch {}
+    safeStorage.removeItem('cyt_results');
   };
 
   // ── Loading screen ───────────────────────────────────────────────────────
@@ -518,9 +512,9 @@ export default function App() {
                   <button
                     onClick={() => {
                       try {
-                        const saved = localStorage.getItem('cyt_results');
-                        const savedLiked = localStorage.getItem('cyt_liked');
-                        const savedInput = localStorage.getItem('cyt_input');
+                        const saved = safeStorage.getItem('cyt_results');
+                        const savedLiked = safeStorage.getItem('cyt_liked');
+                        const savedInput = safeStorage.getItem('cyt_input');
                         if (saved) { setResults(JSON.parse(saved)); setState('result'); }
                         if (savedLiked) setLikedConcepts(JSON.parse(savedLiked));
                         if (savedInput) setInput(savedInput);
@@ -533,11 +527,9 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => {
-                      try {
-                        localStorage.removeItem('cyt_results');
-                        localStorage.removeItem('cyt_liked');
-                        localStorage.removeItem('cyt_input');
-                      } catch {}
+                      safeStorage.removeItem('cyt_results');
+                      safeStorage.removeItem('cyt_liked');
+                      safeStorage.removeItem('cyt_input');
                       setShowRestoreBar(false);
                     }}
                     className="p-1 opacity-40 hover:opacity-100 transition-opacity"

@@ -1,9 +1,10 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import { config } from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
+import { isQuotaError, isAuthError } from './src/utils/errors.js';
 
 config();
 
@@ -27,12 +28,14 @@ const getMimeType = (dataUrl: string): string => {
 };
 
 // Scrub internal details before sending errors to the client
-const sanitizeError = (err: any): string => {
-  const msg: string = err?.message || 'Unknown error';
-  if (msg.includes('spending cap') || msg.includes('RESOURCE_EXHAUSTED')) {
+const sanitizeError = (err: unknown): string => {
+  const errorObj = err as Record<string, unknown>;
+  const msg: string = typeof errorObj?.message === 'string' ? errorObj.message : 'Unknown error';
+
+  if (isQuotaError(msg)) {
     return 'Gemini API quota exceeded. Please check your billing settings at console.cloud.google.com.';
   }
-  if (msg.includes('API_KEY_INVALID') || msg.includes('not valid') || msg.includes('API key')) {
+  if (isAuthError(msg)) {
     return 'Invalid API key. Please check your environment configuration.';
   }
   if (msg.includes('MINIMAX_API_KEY environment variable')) {
@@ -53,7 +56,7 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
+const rateLimit = (maxPerMinute: number) => (req: Request, res: Response, next: NextFunction) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
   const win = ipWindows.get(ip);
@@ -147,7 +150,7 @@ async function startServer() {
         'Tutorial':     'Numbered step indicators or before/after split framing. Clean organized grid layout. Directional arrows and callouts. Subject visibly demonstrates the result. Warm approachable lighting.',
       };
 
-      const contents: any[] = [
+      const contents: (string | { inlineData: { mimeType: string; data: string } })[] = [
         `Video Idea/Title: ${idea}`,
         `Target Niche: ${niche || 'General'}`,
         `Visual Style: ${stylePreset || 'Adventure'}`,
@@ -158,7 +161,7 @@ async function startServer() {
       ];
 
       if (Array.isArray(likedConcepts) && likedConcepts.length > 0) {
-        contents.push(`USER'S PREVIOUSLY LIKED/REFERENCED CONCEPTS (Use these as strong inspiration):\n${JSON.stringify(likedConcepts.map((c: any) => ({
+        contents.push(`USER'S PREVIOUSLY LIKED/REFERENCED CONCEPTS (Use these as strong inspiration):\n${JSON.stringify(likedConcepts.map((c: Record<string, unknown>) => ({
           name: c.concept_name,
           trigger: c.psychology,
           hook: c.hook,
@@ -223,10 +226,11 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/thumbnail-concepts:", error);
       const msg = sanitizeError(error);
-      res.status(error.status === 429 ? 429 : 500).json({ error: msg });
+      const status = (error as Record<string, unknown>)?.status === 429 ? 429 : 500;
+      res.status(status).json({ error: msg });
     }
   });
 
@@ -246,13 +250,13 @@ async function startServer() {
         return res.status(400).json({ error: 'Feedback must be under 1000 characters.' });
       }
 
-      const contents: any[] = [
+      const contents: (string | { inlineData: { mimeType: string; data: string } })[] = [
         `Original Concept JSON: ${JSON.stringify(originalConcept)}`,
         `User Feedback for Refinement: ${feedback}`,
       ];
 
       if (Array.isArray(compositeReferences) && compositeReferences.length > 0) {
-        contents.push(`Composite References — blend style/layout elements from these: ${JSON.stringify(compositeReferences.map((c: any) => ({ name: c.concept_name, prompt: c.image_generation_prompt })))}`);
+        contents.push(`Composite References — blend style/layout elements from these: ${JSON.stringify(compositeReferences.map((c: Record<string, unknown>) => ({ name: c.concept_name, prompt: c.image_generation_prompt })))}`);
       }
 
       contents.push(`Task: Update the image_generation_prompt and other relevant fields based on the user feedback while strictly adhering to the MASTER LOGIC BLUEPRINT.`);
@@ -300,7 +304,7 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/refine-concept:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
@@ -381,21 +385,27 @@ async function startServer() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        await response.json().catch(() => ({}));
         throw new Error(`Image generation failed (${response.status})`);
       }
 
-      const data: any = await response.json();
+      const data = await response.json() as Record<string, unknown>;
 
-      if (data?.base_resp?.status_code && data.base_resp.status_code !== 0) {
-        throw new Error(`Image generation failed: ${data.base_resp.status_msg}`);
+      const baseResp = data.base_resp as Record<string, unknown> | undefined;
+      if (baseResp?.status_code && baseResp.status_code !== 0) {
+        throw new Error(`Image generation failed: ${String(baseResp.status_msg)}`);
       }
 
-      const rawUrl =
-        data?.data?.image_urls?.[0] ||
-        data?.data?.[0]?.url ||
-        data?.images?.[0]?.url ||
-        data?.output_image_urls?.[0];
+      const rawUrl = (() => {
+        if (data.data && Array.isArray(data.data) && data.data[0]?.url) return data.data[0].url as string;
+        if (data.data && !Array.isArray(data.data) && 'image_urls' in (data.data as Record<string, unknown>)) {
+          const innerData = data.data as { image_urls: string[] };
+          if (innerData.image_urls?.[0]) return innerData.image_urls[0];
+        }
+        if (data.images && Array.isArray(data.images) && data.images[0]?.url) return data.images[0].url as string;
+        if (data.output_image_urls && Array.isArray(data.output_image_urls)) return data.output_image_urls[0] as string;
+        return undefined;
+      })();
 
       if (!rawUrl) {
         console.error("Unexpected Minimax response shape:", JSON.stringify(data));
@@ -412,7 +422,7 @@ async function startServer() {
       const base64 = Buffer.from(imgBuffer).toString('base64');
 
       res.json({ imageUrl: `data:${mimeType};base64,${base64}` });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/generate-image:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }

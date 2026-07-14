@@ -1,25 +1,6 @@
-export interface ThumbnailConcept {
-  concept_number: number;
-  concept_name: string;
-  hook: string;
-  layout: string;
-  text_overlay: string;
-  color_strategy: string;
-  psychology: string;
-  ctr_explanation: string;
-  image_generation_prompt: string;
-  imageUrl?: string;
-  refinement_notes?: string;
-}
-
-export interface StrategistResponse {
-  video_context_summary: string;
-  niche_applied: string;
-  style_preset_applied: string;
-  thumbnails: ThumbnailConcept[];
-  optimization_notes: string;
-  chat_prompt: string;
-}
+import { isQuotaError } from '../utils/errors';
+import { type ThumbnailConcept, type StrategistResponse } from '../types';
+export { type ThumbnailConcept, type StrategistResponse };
 
 export async function getThumbnailConcepts(idea: string, niche: string, stylePreset: string, layout: string, palette: string, imageBase64?: string, likedConcepts?: ThumbnailConcept[]): Promise<StrategistResponse> {
   const response = await fetch("/api/thumbnail-concepts", {
@@ -74,7 +55,7 @@ async function handleGeminiError(response: Response): Promise<Error> {
   const errorData = await response.json();
   const errorMessage = errorData.error || "An unknown error occurred";
   
-  if (errorMessage.includes("spending cap") || errorMessage.includes("RESOURCE_EXHAUSTED")) {
+  if (isQuotaError(errorMessage)) {
     return new Error("Gemini API Quota Exceeded: Your Google Cloud project has reached its spending cap or quota. Please check your billing settings at console.cloud.google.com.");
   }
   return new Error(errorMessage);
