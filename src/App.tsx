@@ -5,7 +5,8 @@ import {
   Gamepad2, TrendingUp, BookOpen, Film, Laptop, Mountain, Video, Box, Sparkles, Globe, Coffee, Palette, X, Heart, LayoutTemplate, Trash2,
   Ghost, Eye, MousePointerClick, Wand2, Target, Settings
 } from 'lucide-react';
-import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
+import { getThumbnailConcepts, generateThumbnailImage, refineConcept } from './services/gemini';
+import { ThumbnailConcept, StrategistResponse, ImageEditState } from './types';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
 
 declare global {
@@ -191,14 +192,7 @@ export default function App() {
   const [likedConcepts, setLikedConcepts] = useState<ThumbnailConcept[]>([]);
   const [selectedCompositeReferences, setSelectedCompositeReferences] = useState<Record<number, ThumbnailConcept[]>>({});
   const [mobilePreviewFor, setMobilePreviewFor] = useState<Record<number, boolean>>({});
-  const [imageEdits, setImageEdits] = useState<Record<number, {
-    brightness: number,
-    contrast: number,
-    saturation: number,
-    subjectSize: number,
-    textPosition: 'top' | 'center' | 'bottom',
-    emphasis: 'subject' | 'text' | 'balanced'
-  }>>({});
+  const [imageEdits, setImageEdits] = useState<Record<number, ImageEditState>>({});
 
   // UX state
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
