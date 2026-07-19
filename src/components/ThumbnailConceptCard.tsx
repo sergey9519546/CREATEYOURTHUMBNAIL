@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw, Heart, Send, Wand2, Copy, AlertCircle } from 'lucide-react';
+import { type ThumbnailConcept, type ImageEditState } from '../types';
 
 const getRefinementSuggestions = (hook: string, psychology: string): string[] => {
   const h = hook.toLowerCase();
