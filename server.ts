@@ -27,8 +27,9 @@ const getMimeType = (dataUrl: string): string => {
 };
 
 // Scrub internal details before sending errors to the client
-const sanitizeError = (err: any): string => {
-  const msg: string = err?.message || 'Unknown error';
+const sanitizeError = (err: unknown): string => {
+  const errObj = err as Record<string, unknown>;
+  const msg: string = typeof errObj?.message === 'string' ? errObj.message : 'Unknown error';
   if (msg.includes('spending cap') || msg.includes('RESOURCE_EXHAUSTED')) {
     return 'Gemini API quota exceeded. Please check your billing settings at console.cloud.google.com.';
   }
