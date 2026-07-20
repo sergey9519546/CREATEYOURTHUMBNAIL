@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
+import { type ImageEditState } from './types';
 
 declare global {
   interface Window {
@@ -191,14 +192,7 @@ export default function App() {
   const [likedConcepts, setLikedConcepts] = useState<ThumbnailConcept[]>([]);
   const [selectedCompositeReferences, setSelectedCompositeReferences] = useState<Record<number, ThumbnailConcept[]>>({});
   const [mobilePreviewFor, setMobilePreviewFor] = useState<Record<number, boolean>>({});
-  const [imageEdits, setImageEdits] = useState<Record<number, {
-    brightness: number,
-    contrast: number,
-    saturation: number,
-    subjectSize: number,
-    textPosition: 'top' | 'center' | 'bottom',
-    emphasis: 'subject' | 'text' | 'balanced'
-  }>>({});
+  const [imageEdits, setImageEdits] = useState<Record<number, ImageEditState>>({});
 
   // UX state
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
