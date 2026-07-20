@@ -1,4 +1,5 @@
 import React from 'react';
+import { ThumbnailConcept, StrategistResponse, ImageEditState } from '../types';
 import { motion } from 'motion/react';
 import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw, Heart, Send, Wand2, Copy, AlertCircle } from 'lucide-react';
 
@@ -105,7 +106,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
 }) => {
   const [copied, setCopied] = React.useState(false);
 
-  const updateImageEdit = (conceptNumber: number, updates: Partial<any>) => {
+  const updateImageEdit = (conceptNumber: number, updates: Partial<ImageEditState>) => {
     setImageEdits(prev => ({
       ...prev,
       [conceptNumber]: {
@@ -147,7 +148,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
         {/* Concept Header */}
         <div className="bg-[var(--color-surface-container)] p-8 lg:w-80 flex flex-col justify-between border-b-4 lg:border-b-0 lg:border-r-4 border-[var(--color-accent-pencil)] relative">
           <button
-            onClick={() => setResults((prev: any) => prev ? { ...prev, thumbnails: prev.thumbnails.filter((t: any) => t.concept_number !== concept.concept_number) } : prev)}
+            onClick={() => setResults((prev: StrategistResponse | null) => prev ? { ...prev, thumbnails: prev.thumbnails.filter((t: ThumbnailConcept) => t.concept_number !== concept.concept_number) } : prev)}
             className="absolute top-4 right-4 p-2 hover:bg-[var(--color-primary)] hover:text-[var(--color-on-primary)] transition-colors neo-button"
           >
             <X className="w-4 h-4" />
