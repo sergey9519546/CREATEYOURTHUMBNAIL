@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
@@ -53,7 +53,7 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
+const rateLimit = (maxPerMinute: number) => (req: Request, res: Response, next: NextFunction) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
   const win = ipWindows.get(ip);
@@ -147,7 +147,7 @@ async function startServer() {
         'Tutorial':     'Numbered step indicators or before/after split framing. Clean organized grid layout. Directional arrows and callouts. Subject visibly demonstrates the result. Warm approachable lighting.',
       };
 
-      const contents: any[] = [
+      const contents: (string | { inlineData: { mimeType: string; data: string; }; })[] = [
         `Video Idea/Title: ${idea}`,
         `Target Niche: ${niche || 'General'}`,
         `Visual Style: ${stylePreset || 'Adventure'}`,
@@ -158,7 +158,7 @@ async function startServer() {
       ];
 
       if (Array.isArray(likedConcepts) && likedConcepts.length > 0) {
-        contents.push(`USER'S PREVIOUSLY LIKED/REFERENCED CONCEPTS (Use these as strong inspiration):\n${JSON.stringify(likedConcepts.map((c: any) => ({
+        contents.push(`USER'S PREVIOUSLY LIKED/REFERENCED CONCEPTS (Use these as strong inspiration):\n${JSON.stringify(likedConcepts.map((c: Record<string, unknown>) => ({
           name: c.concept_name,
           trigger: c.psychology,
           hook: c.hook,
@@ -246,13 +246,13 @@ async function startServer() {
         return res.status(400).json({ error: 'Feedback must be under 1000 characters.' });
       }
 
-      const contents: any[] = [
+      const contents: (string | { inlineData: { mimeType: string; data: string; }; })[] = [
         `Original Concept JSON: ${JSON.stringify(originalConcept)}`,
         `User Feedback for Refinement: ${feedback}`,
       ];
 
       if (Array.isArray(compositeReferences) && compositeReferences.length > 0) {
-        contents.push(`Composite References — blend style/layout elements from these: ${JSON.stringify(compositeReferences.map((c: any) => ({ name: c.concept_name, prompt: c.image_generation_prompt })))}`);
+        contents.push(`Composite References — blend style/layout elements from these: ${JSON.stringify(compositeReferences.map((c: Record<string, unknown>) => ({ name: c.concept_name, prompt: c.image_generation_prompt })))}`);
       }
 
       contents.push(`Task: Update the image_generation_prompt and other relevant fields based on the user feedback while strictly adhering to the MASTER LOGIC BLUEPRINT.`);
