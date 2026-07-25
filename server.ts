@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
@@ -27,8 +27,9 @@ const getMimeType = (dataUrl: string): string => {
 };
 
 // Scrub internal details before sending errors to the client
-const sanitizeError = (err: any): string => {
-  const msg: string = err?.message || 'Unknown error';
+const sanitizeError = (err: unknown): string => {
+  const errObj = err as Record<string, unknown>;
+  const msg: string = (errObj?.message as string) || 'Unknown error';
   if (msg.includes('spending cap') || msg.includes('RESOURCE_EXHAUSTED')) {
     return 'Gemini API quota exceeded. Please check your billing settings at console.cloud.google.com.';
   }
@@ -147,7 +148,7 @@ async function startServer() {
         'Tutorial':     'Numbered step indicators or before/after split framing. Clean organized grid layout. Directional arrows and callouts. Subject visibly demonstrates the result. Warm approachable lighting.',
       };
 
-      const contents: any[] = [
+      const contents: (string | { inlineData: { mimeType: string, data: string } })[] = [
         `Video Idea/Title: ${idea}`,
         `Target Niche: ${niche || 'General'}`,
         `Visual Style: ${stylePreset || 'Adventure'}`,
@@ -223,10 +224,11 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/thumbnail-concepts:", error);
       const msg = sanitizeError(error);
-      res.status(error.status === 429 ? 429 : 500).json({ error: msg });
+      const errObj = error as Record<string, unknown>;
+      res.status(errObj?.status === 429 ? 429 : 500).json({ error: msg });
     }
   });
 
@@ -246,7 +248,7 @@ async function startServer() {
         return res.status(400).json({ error: 'Feedback must be under 1000 characters.' });
       }
 
-      const contents: any[] = [
+      const contents: (string | { inlineData: { mimeType: string, data: string } })[] = [
         `Original Concept JSON: ${JSON.stringify(originalConcept)}`,
         `User Feedback for Refinement: ${feedback}`,
       ];
@@ -300,7 +302,7 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/refine-concept:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
@@ -412,7 +414,7 @@ async function startServer() {
       const base64 = Buffer.from(imgBuffer).toString('base64');
 
       res.json({ imageUrl: `data:${mimeType};base64,${base64}` });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/generate-image:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
