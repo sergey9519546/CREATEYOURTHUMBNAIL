@@ -6,7 +6,8 @@ import {
   Ghost, Eye, MousePointerClick, Wand2, Target, Settings
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
-import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
+import { ThumbnailConceptCard, ImageEditState } from './components/ThumbnailConceptCard';
+import { safeStorage } from './utils/storage';
 
 declare global {
   interface Window {
@@ -207,25 +208,25 @@ export default function App() {
   // ── localStorage: check for saved session on mount ──────────────────────
   useEffect(() => {
     try {
-      if (localStorage.getItem('cyt_results')) setShowRestoreBar(true);
+      if (safeStorage.getItem('cyt_results')) setShowRestoreBar(true);
     } catch {}
   }, []);
 
   // ── localStorage: auto-save on change ───────────────────────────────────
   useEffect(() => {
     if (results) {
-      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+      safeStorage.setItem('cyt_results', JSON.stringify(results));
     }
   }, [results]);
 
   useEffect(() => {
-    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+    safeStorage.setItem('cyt_liked', JSON.stringify(likedConcepts));
   }, [likedConcepts]);
 
   useEffect(() => {
     if (!input.trim()) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem('cyt_input', input); } catch {}
+      safeStorage.setItem('cyt_input', input);
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
@@ -439,7 +440,7 @@ export default function App() {
     setImageEdits({});
     setMobilePreviewFor({});
     setRefiningConcepts({});
-    try { localStorage.removeItem('cyt_results'); } catch {}
+    safeStorage.removeItem('cyt_results');
   };
 
   // ── Loading screen ───────────────────────────────────────────────────────
@@ -518,9 +519,9 @@ export default function App() {
                   <button
                     onClick={() => {
                       try {
-                        const saved = localStorage.getItem('cyt_results');
-                        const savedLiked = localStorage.getItem('cyt_liked');
-                        const savedInput = localStorage.getItem('cyt_input');
+                        const saved = safeStorage.getItem('cyt_results');
+                        const savedLiked = safeStorage.getItem('cyt_liked');
+                        const savedInput = safeStorage.getItem('cyt_input');
                         if (saved) { setResults(JSON.parse(saved)); setState('result'); }
                         if (savedLiked) setLikedConcepts(JSON.parse(savedLiked));
                         if (savedInput) setInput(savedInput);
@@ -534,9 +535,9 @@ export default function App() {
                   <button
                     onClick={() => {
                       try {
-                        localStorage.removeItem('cyt_results');
-                        localStorage.removeItem('cyt_liked');
-                        localStorage.removeItem('cyt_input');
+                        safeStorage.removeItem('cyt_results');
+                        safeStorage.removeItem('cyt_liked');
+                        safeStorage.removeItem('cyt_input');
                       } catch {}
                       setShowRestoreBar(false);
                     }}
