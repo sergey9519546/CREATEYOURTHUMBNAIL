@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { X, Smartphone, Download, Loader2, Zap, Activity, LayoutTemplate, MessageSquare, Palette, TrendingUp, Target, Box, RefreshCw, Heart, Send, Wand2, Copy, AlertCircle } from 'lucide-react';
+import { type ThumbnailConcept, type StrategistResponse } from '../types';
 
 const getRefinementSuggestions = (hook: string, psychology: string): string[] => {
   const h = hook.toLowerCase();
@@ -79,19 +80,19 @@ const getRefinementSuggestions = (hook: string, psychology: string): string[] =>
 };
 
 interface ThumbnailConceptCardProps {
-  concept: any;
+  concept: ThumbnailConcept;
   idx: number;
   mobilePreviewFor: Record<number, boolean>;
   setMobilePreviewFor: React.Dispatch<React.SetStateAction<Record<number, boolean>>>;
   imageEdits: Record<number, any>;
   setImageEdits: React.Dispatch<React.SetStateAction<Record<number, any>>>;
   refiningConcepts: Record<number, boolean>;
-  getCTRScore: (concept: any) => number;
-  handleRefine: (concept: any, feedback?: string) => void;
-  handleRegenerateImage: (concept: any) => void;
-  setResults: React.Dispatch<React.SetStateAction<any>>;
-  toggleLike: (concept: any) => void;
-  likedConcepts: any[];
+  getCTRScore: (concept: ThumbnailConcept) => number;
+  handleRefine: (concept: ThumbnailConcept, feedback?: string) => void;
+  handleRegenerateImage: (concept: ThumbnailConcept) => void;
+  setResults: React.Dispatch<React.SetStateAction<StrategistResponse | null>>;
+  toggleLike: (concept: ThumbnailConcept) => void;
+  likedConcepts: ThumbnailConcept[];
   chatInputs: Record<number, string>;
   setChatInputs: React.Dispatch<React.SetStateAction<Record<number, string>>>;
   showRefinementFor: Record<number, boolean>;
