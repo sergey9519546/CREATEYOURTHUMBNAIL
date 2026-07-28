@@ -7,6 +7,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 config();
 
+interface MinimaxResponse {
+  base_resp?: { status_code?: number; status_msg?: string };
+  data?: Record<string, any>;
+  images?: Array<{ url?: string }>;
+  output_image_urls?: string[];
+}
+
 let aiClient: GoogleGenAI | null = null;
 
 const getAI = () => {
@@ -27,8 +34,10 @@ const getMimeType = (dataUrl: string): string => {
 };
 
 // Scrub internal details before sending errors to the client
-const sanitizeError = (err: any): string => {
-  const msg: string = err?.message || 'Unknown error';
+const sanitizeError = (err: unknown): string => {
+  const errObj = typeof err === 'object' && err !== null ? err as Record<string, unknown> : null;
+  const fallback = typeof err === 'string' ? err : 'Unknown error';
+  const msg: string = err instanceof Error ? err.message : (typeof errObj?.message === 'string' ? errObj.message : fallback);
   if (msg.includes('spending cap') || msg.includes('RESOURCE_EXHAUSTED')) {
     return 'Gemini API quota exceeded. Please check your billing settings at console.cloud.google.com.';
   }
@@ -53,7 +62,7 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
+const rateLimit = (maxPerMinute: number) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
   const win = ipWindows.get(ip);
@@ -147,7 +156,7 @@ async function startServer() {
         'Tutorial':     'Numbered step indicators or before/after split framing. Clean organized grid layout. Directional arrows and callouts. Subject visibly demonstrates the result. Warm approachable lighting.',
       };
 
-      const contents: any[] = [
+      const contents: (string | { inlineData: { mimeType: string, data: string } })[] = [
         `Video Idea/Title: ${idea}`,
         `Target Niche: ${niche || 'General'}`,
         `Visual Style: ${stylePreset || 'Adventure'}`,
@@ -246,7 +255,7 @@ async function startServer() {
         return res.status(400).json({ error: 'Feedback must be under 1000 characters.' });
       }
 
-      const contents: any[] = [
+      const contents: (string | { inlineData: { mimeType: string, data: string } })[] = [
         `Original Concept JSON: ${JSON.stringify(originalConcept)}`,
         `User Feedback for Refinement: ${feedback}`,
       ];
@@ -385,7 +394,7 @@ async function startServer() {
         throw new Error(`Image generation failed (${response.status})`);
       }
 
-      const data: any = await response.json();
+      const data: MinimaxResponse = await response.json();
 
       if (data?.base_resp?.status_code && data.base_resp.status_code !== 0) {
         throw new Error(`Image generation failed: ${data.base_resp.status_msg}`);
