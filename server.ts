@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { config } from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
+import { type ThumbnailConcept } from "./src/services/gemini";
 
 config();
 
@@ -27,8 +28,8 @@ const getMimeType = (dataUrl: string): string => {
 };
 
 // Scrub internal details before sending errors to the client
-const sanitizeError = (err: any): string => {
-  const msg: string = err?.message || 'Unknown error';
+const sanitizeError = (err: unknown): string => {
+  const msg: string = err instanceof Error ? err.message : typeof err === 'object' && err !== null && 'message' in err ? String(err.message) : String(err) || 'Unknown error';
   if (msg.includes('spending cap') || msg.includes('RESOURCE_EXHAUSTED')) {
     return 'Gemini API quota exceeded. Please check your billing settings at console.cloud.google.com.';
   }
@@ -53,7 +54,7 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
+const rateLimit = (maxPerMinute: number) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
   const win = ipWindows.get(ip);
@@ -147,7 +148,7 @@ async function startServer() {
         'Tutorial':     'Numbered step indicators or before/after split framing. Clean organized grid layout. Directional arrows and callouts. Subject visibly demonstrates the result. Warm approachable lighting.',
       };
 
-      const contents: any[] = [
+      const contents: (string | { inlineData: { mimeType: string, data: string } })[] = [
         `Video Idea/Title: ${idea}`,
         `Target Niche: ${niche || 'General'}`,
         `Visual Style: ${stylePreset || 'Adventure'}`,
@@ -158,7 +159,7 @@ async function startServer() {
       ];
 
       if (Array.isArray(likedConcepts) && likedConcepts.length > 0) {
-        contents.push(`USER'S PREVIOUSLY LIKED/REFERENCED CONCEPTS (Use these as strong inspiration):\n${JSON.stringify(likedConcepts.map((c: any) => ({
+        contents.push(`USER'S PREVIOUSLY LIKED/REFERENCED CONCEPTS (Use these as strong inspiration):\n${JSON.stringify(likedConcepts.map((c: ThumbnailConcept) => ({
           name: c.concept_name,
           trigger: c.psychology,
           hook: c.hook,
@@ -223,10 +224,10 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error in /api/thumbnail-concepts:", error);
       const msg = sanitizeError(error);
-      res.status(error.status === 429 ? 429 : 500).json({ error: msg });
+      res.status(typeof error === 'object' && error !== null && 'status' in error && error.status === 429 ? 429 : 500).json({ error: msg });
     }
   });
 
@@ -246,13 +247,13 @@ async function startServer() {
         return res.status(400).json({ error: 'Feedback must be under 1000 characters.' });
       }
 
-      const contents: any[] = [
+      const contents: (string | { inlineData: { mimeType: string, data: string } })[] = [
         `Original Concept JSON: ${JSON.stringify(originalConcept)}`,
         `User Feedback for Refinement: ${feedback}`,
       ];
 
       if (Array.isArray(compositeReferences) && compositeReferences.length > 0) {
-        contents.push(`Composite References — blend style/layout elements from these: ${JSON.stringify(compositeReferences.map((c: any) => ({ name: c.concept_name, prompt: c.image_generation_prompt })))}`);
+        contents.push(`Composite References — blend style/layout elements from these: ${JSON.stringify(compositeReferences.map((c: ThumbnailConcept) => ({ name: c.concept_name, prompt: c.image_generation_prompt })))}`);
       }
 
       contents.push(`Task: Update the image_generation_prompt and other relevant fields based on the user feedback while strictly adhering to the MASTER LOGIC BLUEPRINT.`);
@@ -300,7 +301,7 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error in /api/refine-concept:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
@@ -385,7 +386,7 @@ async function startServer() {
         throw new Error(`Image generation failed (${response.status})`);
       }
 
-      const data: any = await response.json();
+      const data: Record<string, any> = await response.json();
 
       if (data?.base_resp?.status_code && data.base_resp.status_code !== 0) {
         throw new Error(`Image generation failed: ${data.base_resp.status_msg}`);
@@ -412,7 +413,7 @@ async function startServer() {
       const base64 = Buffer.from(imgBuffer).toString('base64');
 
       res.json({ imageUrl: `data:${mimeType};base64,${base64}` });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error in /api/generate-image:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
