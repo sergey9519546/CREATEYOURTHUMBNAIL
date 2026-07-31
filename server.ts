@@ -233,7 +233,7 @@ async function startServer() {
   app.post("/api/refine-concept", rateLimit(20), async (req, res) => {
     try {
       const ai = getAI();
-      const { originalConcept, feedback, compositeReferences, imageBase64 } = req.body;
+      const { originalConcept, feedback, imageBase64 } = req.body;
 
       // Input validation
       if (!originalConcept || typeof originalConcept !== 'object') {
@@ -250,10 +250,6 @@ async function startServer() {
         `Original Concept JSON: ${JSON.stringify(originalConcept)}`,
         `User Feedback for Refinement: ${feedback}`,
       ];
-
-      if (Array.isArray(compositeReferences) && compositeReferences.length > 0) {
-        contents.push(`Composite References — blend style/layout elements from these: ${JSON.stringify(compositeReferences.map((c: any) => ({ name: c.concept_name, prompt: c.image_generation_prompt })))}`);
-      }
 
       contents.push(`Task: Update the image_generation_prompt and other relevant fields based on the user feedback while strictly adhering to the MASTER LOGIC BLUEPRINT.`);
 
