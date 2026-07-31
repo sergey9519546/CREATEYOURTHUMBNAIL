@@ -1,3 +1,4 @@
+import { safeStorage } from './utils/storage';
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -189,7 +190,6 @@ export default function App() {
   const [refiningConcepts, setRefiningConcepts] = useState<Record<number, boolean>>({});
   const [showRefinementFor, setShowRefinementFor] = useState<Record<number, boolean>>({});
   const [likedConcepts, setLikedConcepts] = useState<ThumbnailConcept[]>([]);
-  const [selectedCompositeReferences, setSelectedCompositeReferences] = useState<Record<number, ThumbnailConcept[]>>({});
   const [mobilePreviewFor, setMobilePreviewFor] = useState<Record<number, boolean>>({});
   const [imageEdits, setImageEdits] = useState<Record<number, {
     brightness: number,
@@ -207,25 +207,25 @@ export default function App() {
   // ── localStorage: check for saved session on mount ──────────────────────
   useEffect(() => {
     try {
-      if (localStorage.getItem('cyt_results')) setShowRestoreBar(true);
+      if (safeStorage.getItem('cyt_results')) setShowRestoreBar(true);
     } catch {}
   }, []);
 
   // ── localStorage: auto-save on change ───────────────────────────────────
   useEffect(() => {
     if (results) {
-      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+      safeStorage.setItem('cyt_results', JSON.stringify(results));
     }
   }, [results]);
 
   useEffect(() => {
-    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+    safeStorage.setItem('cyt_liked', JSON.stringify(likedConcepts));
   }, [likedConcepts]);
 
   useEffect(() => {
     if (!input.trim()) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem('cyt_input', input); } catch {}
+      safeStorage.setItem('cyt_input', input);
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
@@ -403,8 +403,7 @@ export default function App() {
     setError(null);
 
     try {
-      const compositeReferences = selectedCompositeReferences[concept.concept_number] || [];
-      const refinedConcept = await refineConcept(concept, feedback, compositeReferences, base64Image || undefined);
+      const refinedConcept = await refineConcept(concept, feedback, base64Image || undefined);
       const prompt = includeFace
         ? `${refinedConcept.image_generation_prompt}, prominent expressive human face with clear emotion`
         : refinedConcept.image_generation_prompt;
@@ -439,7 +438,7 @@ export default function App() {
     setImageEdits({});
     setMobilePreviewFor({});
     setRefiningConcepts({});
-    try { localStorage.removeItem('cyt_results'); } catch {}
+    safeStorage.removeItem('cyt_results');
   };
 
   // ── Loading screen ───────────────────────────────────────────────────────
@@ -518,9 +517,9 @@ export default function App() {
                   <button
                     onClick={() => {
                       try {
-                        const saved = localStorage.getItem('cyt_results');
-                        const savedLiked = localStorage.getItem('cyt_liked');
-                        const savedInput = localStorage.getItem('cyt_input');
+                        const saved = safeStorage.getItem('cyt_results');
+                        const savedLiked = safeStorage.getItem('cyt_liked');
+                        const savedInput = safeStorage.getItem('cyt_input');
                         if (saved) { setResults(JSON.parse(saved)); setState('result'); }
                         if (savedLiked) setLikedConcepts(JSON.parse(savedLiked));
                         if (savedInput) setInput(savedInput);
@@ -534,9 +533,9 @@ export default function App() {
                   <button
                     onClick={() => {
                       try {
-                        localStorage.removeItem('cyt_results');
-                        localStorage.removeItem('cyt_liked');
-                        localStorage.removeItem('cyt_input');
+                        safeStorage.removeItem('cyt_results');
+                        safeStorage.removeItem('cyt_liked');
+                        safeStorage.removeItem('cyt_input');
                       } catch {}
                       setShowRestoreBar(false);
                     }}

@@ -37,13 +37,13 @@ export async function getThumbnailConcepts(idea: string, niche: string, stylePre
   return response.json();
 }
 
-export async function refineConcept(originalConcept: ThumbnailConcept, feedback: string, compositeReferences?: ThumbnailConcept[], imageBase64?: string): Promise<ThumbnailConcept> {
+export async function refineConcept(originalConcept: ThumbnailConcept, feedback: string, imageBase64?: string): Promise<ThumbnailConcept> {
   const response = await fetch("/api/refine-concept", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ originalConcept, feedback, compositeReferences, imageBase64 }),
+    body: JSON.stringify({ originalConcept, feedback, imageBase64 }),
   });
 
   if (!response.ok) {
