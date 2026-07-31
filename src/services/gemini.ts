@@ -12,6 +12,15 @@ export interface ThumbnailConcept {
   refinement_notes?: string;
 }
 
+export interface ImageEditState {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  subjectSize: number;
+  textPosition: 'top' | 'center' | 'bottom';
+  emphasis: 'subject' | 'text' | 'balanced';
+}
+
 export interface StrategistResponse {
   video_context_summary: string;
   niche_applied: string;
