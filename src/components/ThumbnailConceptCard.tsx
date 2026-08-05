@@ -78,20 +78,29 @@ const getRefinementSuggestions = (hook: string, psychology: string): string[] =>
   return Array.from(suggestions).slice(0, 6);
 };
 
+export interface ImageEditState {
+  brightness?: number;
+  contrast?: number;
+  saturation?: number;
+  subjectSize?: number;
+  textPosition?: 'top' | 'center' | 'bottom';
+  emphasis?: 'subject' | 'text' | 'balanced';
+}
+
 interface ThumbnailConceptCardProps {
-  concept: any;
+  concept: import('../services/gemini').ThumbnailConcept;
   idx: number;
   mobilePreviewFor: Record<number, boolean>;
   setMobilePreviewFor: React.Dispatch<React.SetStateAction<Record<number, boolean>>>;
-  imageEdits: Record<number, any>;
-  setImageEdits: React.Dispatch<React.SetStateAction<Record<number, any>>>;
+  imageEdits: Record<number, ImageEditState>;
+  setImageEdits: React.Dispatch<React.SetStateAction<Record<number, ImageEditState>>>;
   refiningConcepts: Record<number, boolean>;
-  getCTRScore: (concept: any) => number;
-  handleRefine: (concept: any, feedback?: string) => void;
-  handleRegenerateImage: (concept: any) => void;
-  setResults: React.Dispatch<React.SetStateAction<any>>;
-  toggleLike: (concept: any) => void;
-  likedConcepts: any[];
+  getCTRScore: (concept: import('../services/gemini').ThumbnailConcept) => number;
+  handleRefine: (concept: import('../services/gemini').ThumbnailConcept, feedback?: string) => void;
+  handleRegenerateImage: (concept: import('../services/gemini').ThumbnailConcept) => void;
+  setResults: React.Dispatch<React.SetStateAction<import('../services/gemini').StrategistResponse | null>>;
+  toggleLike: (concept: import('../services/gemini').ThumbnailConcept) => void;
+  likedConcepts: import('../services/gemini').ThumbnailConcept[];
   chatInputs: Record<number, string>;
   setChatInputs: React.Dispatch<React.SetStateAction<Record<number, string>>>;
   showRefinementFor: Record<number, boolean>;
@@ -105,7 +114,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
 }) => {
   const [copied, setCopied] = React.useState(false);
 
-  const updateImageEdit = (conceptNumber: number, updates: Partial<any>) => {
+  const updateImageEdit = (conceptNumber: number, updates: Partial<ImageEditState>) => {
     setImageEdits(prev => ({
       ...prev,
       [conceptNumber]: {
@@ -147,7 +156,7 @@ export const ThumbnailConceptCard: React.FC<ThumbnailConceptCardProps> = ({
         {/* Concept Header */}
         <div className="bg-[var(--color-surface-container)] p-8 lg:w-80 flex flex-col justify-between border-b-4 lg:border-b-0 lg:border-r-4 border-[var(--color-accent-pencil)] relative">
           <button
-            onClick={() => setResults((prev: any) => prev ? { ...prev, thumbnails: prev.thumbnails.filter((t: any) => t.concept_number !== concept.concept_number) } : prev)}
+            onClick={() => setResults((prev) => prev ? { ...prev, thumbnails: prev!.thumbnails.filter((t) => t.concept_number !== concept.concept_number) } : prev)}
             className="absolute top-4 right-4 p-2 hover:bg-[var(--color-primary)] hover:text-[var(--color-on-primary)] transition-colors neo-button"
           >
             <X className="w-4 h-4" />
