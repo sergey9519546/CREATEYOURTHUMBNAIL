@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getThumbnailConcepts, generateThumbnailImage, refineConcept, StrategistResponse, ThumbnailConcept } from './services/gemini';
 import { ThumbnailConceptCard } from './components/ThumbnailConceptCard';
+import { safeStorage } from './utils/storage';
 
 declare global {
   interface Window {
@@ -206,26 +207,32 @@ export default function App() {
 
   // ── localStorage: check for saved session on mount ──────────────────────
   useEffect(() => {
-    try {
-      if (localStorage.getItem('cyt_results')) setShowRestoreBar(true);
-    } catch {}
+    if (safeStorage.getItem('cyt_results')) setShowRestoreBar(true);
   }, []);
 
   // ── localStorage: auto-save on change ───────────────────────────────────
   useEffect(() => {
     if (results) {
-      try { localStorage.setItem('cyt_results', JSON.stringify(results)); } catch {}
+      try {
+        safeStorage.setItem('cyt_results', JSON.stringify(results));
+      } catch (err) {
+        console.error('Failed to stringify results for storage', err);
+      }
     }
   }, [results]);
 
   useEffect(() => {
-    try { localStorage.setItem('cyt_liked', JSON.stringify(likedConcepts)); } catch {}
+    try {
+      safeStorage.setItem('cyt_liked', JSON.stringify(likedConcepts));
+    } catch (err) {
+      console.error('Failed to stringify likedConcepts for storage', err);
+    }
   }, [likedConcepts]);
 
   useEffect(() => {
     if (!input.trim()) return;
     const timer = setTimeout(() => {
-      try { localStorage.setItem('cyt_input', input); } catch {}
+      safeStorage.setItem('cyt_input', input);
     }, 1000);
     return () => clearTimeout(timer);
   }, [input]);
@@ -439,7 +446,7 @@ export default function App() {
     setImageEdits({});
     setMobilePreviewFor({});
     setRefiningConcepts({});
-    try { localStorage.removeItem('cyt_results'); } catch {}
+    safeStorage.removeItem('cyt_results');
   };
 
   // ── Loading screen ───────────────────────────────────────────────────────
@@ -517,14 +524,17 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
+                      const saved = safeStorage.getItem('cyt_results');
+                      const savedLiked = safeStorage.getItem('cyt_liked');
+                      const savedInput = safeStorage.getItem('cyt_input');
+
                       try {
-                        const saved = localStorage.getItem('cyt_results');
-                        const savedLiked = localStorage.getItem('cyt_liked');
-                        const savedInput = localStorage.getItem('cyt_input');
                         if (saved) { setResults(JSON.parse(saved)); setState('result'); }
                         if (savedLiked) setLikedConcepts(JSON.parse(savedLiked));
                         if (savedInput) setInput(savedInput);
-                      } catch {}
+                      } catch (err) {
+                        console.error('Failed to parse saved state from storage', err);
+                      }
                       setShowRestoreBar(false);
                     }}
                     className="px-3 py-1 bg-[var(--color-on-surface)] text-[var(--color-bg)] text-[10px] font-label uppercase neo-border hover:opacity-80 transition-opacity"
@@ -533,11 +543,9 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => {
-                      try {
-                        localStorage.removeItem('cyt_results');
-                        localStorage.removeItem('cyt_liked');
-                        localStorage.removeItem('cyt_input');
-                      } catch {}
+                      safeStorage.removeItem('cyt_results');
+                      safeStorage.removeItem('cyt_liked');
+                      safeStorage.removeItem('cyt_input');
                       setShowRestoreBar(false);
                     }}
                     className="p-1 opacity-40 hover:opacity-100 transition-opacity"
