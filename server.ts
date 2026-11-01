@@ -53,7 +53,7 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
+const rateLimit = (maxPerMinute: number) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
   const win = ipWindows.get(ip);
