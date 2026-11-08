@@ -268,14 +268,14 @@ export default function App() {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (state === 'generating') {
+    if (state === 'generating' || isGeneratingMore) {
       setLoadingStepIndex(0);
       interval = setInterval(() => {
         setLoadingStepIndex(prev => (prev < COGNITIVE_STEPS.length - 1 ? prev + 1 : prev));
       }, 2000);
     }
     return () => clearInterval(interval);
-  }, [state]);
+  }, [state, isGeneratingMore]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1087,7 +1087,7 @@ export default function App() {
                   className="w-full py-6 flex items-center justify-center gap-3 font-label uppercase text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed group border-2 border-dashed border-[var(--color-accent-pencil)]/20 hover:border-[var(--color-on-surface)] hover:bg-[var(--color-secondary-yellow)] bg-transparent"
                 >
                   {isGeneratingMore ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Generating More Concepts...</>
+                    <><Loader2 className="w-4 h-4 animate-spin" /> {COGNITIVE_STEPS[loadingStepIndex]?.text || "Generating More Concepts..."}</>
                   ) : (
                     <><Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" /> Generate 3 More Concepts</>
                   )}
