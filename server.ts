@@ -27,8 +27,8 @@ const getMimeType = (dataUrl: string): string => {
 };
 
 // Scrub internal details before sending errors to the client
-const sanitizeError = (err: any): string => {
-  const msg: string = err?.message || 'Unknown error';
+const sanitizeError = (err: unknown): string => {
+  const msg: string = err instanceof Error ? err.message : (err && typeof err === 'object' && 'message' in err ? String(err.message) : String(err)) || 'Unknown error';
   if (msg.includes('spending cap') || msg.includes('RESOURCE_EXHAUSTED')) {
     return 'Gemini API quota exceeded. Please check your billing settings at console.cloud.google.com.';
   }
@@ -53,7 +53,7 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-const rateLimit = (maxPerMinute: number) => (req: any, res: any, next: any) => {
+const rateLimit = (maxPerMinute: number) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
   const win = ipWindows.get(ip);
@@ -223,10 +223,10 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/thumbnail-concepts:", error);
       const msg = sanitizeError(error);
-      res.status(error.status === 429 ? 429 : 500).json({ error: msg });
+      res.status(error && typeof error === 'object' && 'status' in error && error.status === 429 ? 429 : 500).json({ error: msg });
     }
   });
 
@@ -300,7 +300,7 @@ async function startServer() {
       } catch {
         throw new Error("AI returned malformed JSON — please try again");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/refine-concept:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
@@ -385,7 +385,8 @@ async function startServer() {
         throw new Error(`Image generation failed (${response.status})`);
       }
 
-      const data: any = await response.json();
+      interface MinimaxResponse { base_resp?: { status_code?: number; status_msg?: string }; data?: Record<string, any>; images?: Array<{ url: string }>; output_image_urls?: string[]; }
+      const data: MinimaxResponse = await response.json();
 
       if (data?.base_resp?.status_code && data.base_resp.status_code !== 0) {
         throw new Error(`Image generation failed: ${data.base_resp.status_msg}`);
@@ -412,7 +413,7 @@ async function startServer() {
       const base64 = Buffer.from(imgBuffer).toString('base64');
 
       res.json({ imageUrl: `data:${mimeType};base64,${base64}` });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in /api/generate-image:", error);
       res.status(500).json({ error: sanitizeError(error) });
     }
